@@ -1,6 +1,7 @@
 import { getFinancialData } from '@/lib/sheets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Link from 'next/link';
 
 export default async function Home() {
   let data = null;
@@ -220,6 +221,18 @@ export default async function Home() {
               </Card>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Navigation */}
+      <section className="py-8 border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Link
+            href="/projects"
+            className="inline-block text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ดูโครงการในอนาคต →
+          </Link>
         </div>
       </section>
 
