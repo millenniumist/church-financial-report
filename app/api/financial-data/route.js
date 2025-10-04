@@ -1,23 +1,18 @@
 import { google } from 'googleapis';
 import fs from 'fs';
+import { NextResponse } from 'next/server';
 
 async function getAuthClient() {
-  // Load service account credentials
-  // For Vercel: use GOOGLE_SERVICE_ACCOUNT_JSON environment variable
-  // For local: use file path from GOOGLE_SERVICE_ACCOUNT_PATH
   let credentials;
 
   if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-    // Production (Vercel): Use JSON string from environment variable
     credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
   } else if (process.env.GOOGLE_SERVICE_ACCOUNT_PATH) {
-    // Local development: Read from file
     credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_SERVICE_ACCOUNT_PATH, 'utf8'));
   } else {
     throw new Error('Missing Google Service Account credentials');
   }
 
-  // Create auth client
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
@@ -26,66 +21,16 @@ async function getAuthClient() {
   return await auth.getClient();
 }
 
-export async function getFinancialData() {
-  try {
-    const authClient = await getAuthClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
-
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
-      range: 'Monthly!AF:AR',
-    });
-
-    const rows = response.data.values;
-
-    if (!rows || rows.length === 0) {
-      return { income: [], expenses: [], totals: { income: 0, expenses: 0, balance: 0 } };
-    }
-
-    // Process and aggregate data
-    return aggregateFinancialData(rows);
-  } catch (error) {
-    console.error('Error fetching data from Google Sheets:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      hasServiceAccountJson: !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
-      hasServiceAccountPath: !!process.env.GOOGLE_SERVICE_ACCOUNT_PATH,
-      hasSpreadsheetId: !!process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
-    });
-    throw new Error(`Failed to fetch financial data: ${error.message}`);
-  }
-}
-
-export async function getProjectData() {
-  try {
-    const authClient = await getAuthClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
-
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
-      range: 'Project!A:C',
-    });
-
-    const rows = response.data.values;
-
-    if (!rows || rows.length === 0) {
-      return { projects: [] };
-    }
-
-    // Process project data
-    return processProjectData(rows);
-  } catch (error) {
-    console.error('Error fetching project data from Google Sheets:', error);
-    throw new Error(`Failed to fetch project data: ${error.message}`);
-  }
-}
-
-function aggregateFinancialData(rows) {
+function aggregateFinancialDataWithSettings(rows, settings) {
   const income = [];
   const expenses = [];
   const monthlyData = [];
 
+  // Debug: Log first 20 rows to understand structure
+  console.log('First 20 rows of data:');
+  for (let i = 0; i < Math.min(20, rows.length); i++) {
+    console.log(`Row ${i}:`, rows[i][0]);
+  }
 
   // Dynamically detect structure
   let incomeStartRow = -1;
@@ -136,11 +81,6 @@ function aggregateFinancialData(rows) {
   // Expense ends at total income row
   const expenseEndRow = totalIncomeRow > 0 ? totalIncomeRow - 1 : -1;
 
-  console.log('Calculated ranges:', {
-    incomeRange: `${incomeStartRow} to ${incomeEndRow}`,
-    expenseRange: `${expenseStartRow} to ${expenseEndRow}`
-  });
-
   // Get month names from header row and extract year
   const months = rows[0] ? rows[0].slice(1, 13) : [];
   const year = rows[0] && rows[0][1] ? rows[0][1].match(/\d{2,4}$/) : null;
@@ -155,6 +95,7 @@ function aggregateFinancialData(rows) {
     const expenseDetails = [];
 
     // Process income categories for this month
+    const incomeAggregates = {};
     if (incomeStartRow > 0 && incomeEndRow > 0) {
       for (let i = incomeStartRow; i <= incomeEndRow; i++) {
         if (!rows[i]) continue;
@@ -163,13 +104,28 @@ function aggregateFinancialData(rows) {
 
         const value = parseFloat(rows[i][col]?.toString().replace(/,/g, '')) || 0;
 
-        if (value > 0) {
+        if (value === 0) continue; // Skip zero values in monthly details
+
+        const setting = settings.incomeRows?.find(r => r.id === categoryName);
+
+        // If setting exists and should aggregate
+        if (setting && setting.aggregateInto && setting.visible) {
+          incomeAggregates[setting.aggregateInto] = (incomeAggregates[setting.aggregateInto] || 0) + value;
+        }
+        // If setting exists and visible but no aggregation, OR no setting exists (show all)
+        else if (!setting || (setting && setting.visible)) {
           incomeDetails.push({ category: categoryName, amount: value });
         }
       }
     }
 
+    // Add aggregated income items
+    Object.entries(incomeAggregates).forEach(([name, amount]) => {
+      incomeDetails.push({ category: name, amount });
+    });
+
     // Process expense categories for this month
+    const expenseAggregates = {};
     if (expenseStartRow > 0 && expenseEndRow > 0) {
       for (let i = expenseStartRow; i <= expenseEndRow; i++) {
         if (!rows[i]) continue;
@@ -178,11 +134,25 @@ function aggregateFinancialData(rows) {
 
         const value = parseFloat(rows[i][col]?.toString().replace(/,/g, '')) || 0;
 
-        if (value > 0) {
+        if (value === 0) continue; // Skip zero values in monthly details
+
+        const setting = settings.expenseRows?.find(r => r.id === categoryName);
+
+        // If setting exists and should aggregate
+        if (setting && setting.aggregateInto && setting.visible) {
+          expenseAggregates[setting.aggregateInto] = (expenseAggregates[setting.aggregateInto] || 0) + value;
+        }
+        // If setting exists and visible but no aggregation, OR no setting exists (show all)
+        else if (!setting || (setting && setting.visible)) {
           expenseDetails.push({ category: categoryName, amount: value });
         }
       }
     }
+
+    // Add aggregated expense items
+    Object.entries(expenseAggregates).forEach(([name, amount]) => {
+      expenseDetails.push({ category: name, amount });
+    });
 
     // Get totals from summary rows
     if (totalIncomeRow > 0 && rows[totalIncomeRow] && rows[totalIncomeRow][col]) {
@@ -202,65 +172,79 @@ function aggregateFinancialData(rows) {
     });
   }
 
-  // Process income totals (show ALL categories, even if zero)
+  // Process income totals
+  const incomeAggregates = {};
   if (incomeStartRow > 0 && incomeEndRow > 0) {
     console.log('Processing income from row', incomeStartRow, 'to', incomeEndRow);
     for (let i = incomeStartRow; i <= incomeEndRow; i++) {
-      if (!rows[i]) {
-        console.log('Row', i, 'is undefined, skipping');
-        continue;
-      }
+      if (!rows[i]) continue;
       const categoryName = rows[i][0]?.toString().trim();
-      if (!categoryName) {
-        console.log('Row', i, 'has no category name, skipping');
-        continue;
-      }
+      if (!categoryName) continue;
 
       let totalAmount = 0;
 
       for (let col = 1; col <= 12; col++) {
         if (rows[i][col]) {
-          const numValue = parseFloat(rows[i][col].toString().replace(/,/g, '')) || 0;
-          totalAmount += numValue;
+          totalAmount += parseFloat(rows[i][col].toString().replace(/,/g, '')) || 0;
         }
       }
 
       console.log('Income category:', categoryName, 'total:', totalAmount);
 
-      // Include all categories, even with zero amount
-      income.push({ category: categoryName, amount: totalAmount });
+      // Check settings - if category exists in settings and has aggregation
+      const setting = settings.incomeRows?.find(r => r.id === categoryName);
+
+      // If setting exists and should aggregate
+      if (setting && setting.aggregateInto && setting.visible) {
+        incomeAggregates[setting.aggregateInto] = (incomeAggregates[setting.aggregateInto] || 0) + totalAmount;
+      }
+      // If setting exists and visible but no aggregation, OR no setting exists (show all)
+      else if (!setting || (setting && setting.visible)) {
+        income.push({ category: categoryName, amount: totalAmount });
+      }
     }
   }
 
-  // Process expense totals (show ALL categories, even if zero)
+  Object.entries(incomeAggregates).forEach(([name, amount]) => {
+    income.push({ category: name, amount });
+  });
+
+  // Process expense totals
+  const expenseAggregates = {};
   if (expenseStartRow > 0 && expenseEndRow > 0) {
     console.log('Processing expense from row', expenseStartRow, 'to', expenseEndRow);
     for (let i = expenseStartRow; i <= expenseEndRow; i++) {
-      if (!rows[i]) {
-        console.log('Row', i, 'is undefined, skipping');
-        continue;
-      }
+      if (!rows[i]) continue;
       const categoryName = rows[i][0]?.toString().trim();
-      if (!categoryName) {
-        console.log('Row', i, 'has no category name, skipping');
-        continue;
-      }
+      if (!categoryName) continue;
 
       let totalAmount = 0;
 
       for (let col = 1; col <= 12; col++) {
         if (rows[i][col]) {
-          const numValue = parseFloat(rows[i][col].toString().replace(/,/g, '')) || 0;
-          totalAmount += numValue;
+          totalAmount += parseFloat(rows[i][col].toString().replace(/,/g, '')) || 0;
         }
       }
 
       console.log('Expense category:', categoryName, 'total:', totalAmount);
 
-      // Include all categories, even with zero amount
-      expenses.push({ category: categoryName, amount: totalAmount });
+      // Check settings - if category exists in settings and has aggregation
+      const setting = settings.expenseRows?.find(r => r.id === categoryName);
+
+      // If setting exists and should aggregate
+      if (setting && setting.aggregateInto && setting.visible) {
+        expenseAggregates[setting.aggregateInto] = (expenseAggregates[setting.aggregateInto] || 0) + totalAmount;
+      }
+      // If setting exists and visible but no aggregation, OR no setting exists (show all)
+      else if (!setting || (setting && setting.visible)) {
+        expenses.push({ category: categoryName, amount: totalAmount });
+      }
     }
   }
+
+  Object.entries(expenseAggregates).forEach(([name, amount]) => {
+    expenses.push({ category: name, amount });
+  });
 
   // Get totals
   let totalIncome = 0;
@@ -269,8 +253,7 @@ function aggregateFinancialData(rows) {
   if (totalIncomeRow > 0 && rows[totalIncomeRow]) {
     for (let col = 1; col <= 12; col++) {
       if (rows[totalIncomeRow][col]) {
-        const numValue = parseFloat(rows[totalIncomeRow][col].toString().replace(/,/g, '')) || 0;
-        totalIncome += numValue;
+        totalIncome += parseFloat(rows[totalIncomeRow][col].toString().replace(/,/g, '')) || 0;
       }
     }
   }
@@ -278,13 +261,10 @@ function aggregateFinancialData(rows) {
   if (totalExpenseRow > 0 && rows[totalExpenseRow]) {
     for (let col = 1; col <= 12; col++) {
       if (rows[totalExpenseRow][col]) {
-        const numValue = parseFloat(rows[totalExpenseRow][col].toString().replace(/,/g, '')) || 0;
-        totalExpenses += numValue;
+        totalExpenses += parseFloat(rows[totalExpenseRow][col].toString().replace(/,/g, '')) || 0;
       }
     }
   }
-
-  const balance = totalIncome - totalExpenses;
 
   return {
     income,
@@ -294,34 +274,41 @@ function aggregateFinancialData(rows) {
     totals: {
       income: totalIncome,
       expenses: totalExpenses,
-      balance
+      balance: totalIncome - totalExpenses
     }
   };
 }
 
-function processProjectData(rows) {
-  // Structure:
-  // Row 0: Header ["Project", "เป้าหมาย", "เงินถวายปัจจุบัน"]
-  // Rows 1+: [name, goal, current]
+export async function POST(request) {
+  try {
+    const { settings } = await request.json();
 
-  const projects = [];
+    const authClient = await getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient });
 
-  for (let i = 1; i < rows.length; i++) {
-    if (!rows[i] || !rows[i][0]) continue;
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
+      range: 'Monthly!AF:AR',
+    });
 
-    const name = rows[i][0];
-    const goal = parseFloat(rows[i][1]?.toString().replace(/,/g, '')) || 0;
-    const current = parseFloat(rows[i][2]?.toString().replace(/,/g, '')) || 0;
+    const rows = response.data.values;
 
-    if (goal > 0) {
-      projects.push({
-        name,
-        goal,
-        current,
-        percentage: goal > 0 ? Math.round((current / goal) * 100) : 0
+    if (!rows || rows.length === 0) {
+      return NextResponse.json({
+        income: [],
+        expenses: [],
+        monthlyData: [],
+        totals: { income: 0, expenses: 0, balance: 0 }
       });
     }
-  }
 
-  return { projects };
+    const data = aggregateFinancialDataWithSettings(rows, settings);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error fetching financial data:', error);
+    return NextResponse.json(
+      { error: `Failed to fetch financial data: ${error.message}` },
+      { status: 500 }
+    );
+  }
 }
