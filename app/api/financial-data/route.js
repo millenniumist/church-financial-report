@@ -26,11 +26,6 @@ function aggregateFinancialDataWithSettings(rows, settings) {
   const expenses = [];
   const monthlyData = [];
 
-  // Debug: Log first 20 rows to understand structure
-  console.log('First 20 rows of data:');
-  for (let i = 0; i < Math.min(20, rows.length); i++) {
-    console.log(`Row ${i}:`, rows[i][0]);
-  }
 
   // Dynamically detect structure
   let incomeStartRow = -1;
@@ -189,7 +184,7 @@ function aggregateFinancialDataWithSettings(rows, settings) {
         }
       }
 
-      console.log('Income category:', categoryName, 'total:', totalAmount);
+
 
       // Check settings - if category exists in settings and has aggregation
       const setting = settings.incomeRows?.find(r => r.id === categoryName);

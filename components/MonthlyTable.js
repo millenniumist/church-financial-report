@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -24,9 +24,8 @@ export default function MonthlyTable({ monthlyData }) {
       </TableHeader>
       <TableBody>
         {monthlyData.filter(m => m.income > 0 || m.expense > 0).map((month, index) => (
-          <>
+          <React.Fragment key={index}>
             <TableRow
-              key={index}
               className="hover:bg-muted/50 transition-colors cursor-pointer"
               onClick={() => toggleMonth(index)}
             >
@@ -49,7 +48,7 @@ export default function MonthlyTable({ monthlyData }) {
               </TableCell>
             </TableRow>
             {expandedMonth === index && (
-              <TableRow key={`${index}-details`} className="bg-muted/30">
+              <TableRow className="bg-muted/30">
                 <TableCell colSpan={5} className="px-6 py-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Income Details */}
@@ -93,7 +92,7 @@ export default function MonthlyTable({ monthlyData }) {
                 </TableCell>
               </TableRow>
             )}
-          </>
+          </React.Fragment>
         ))}
       </TableBody>
     </Table>
