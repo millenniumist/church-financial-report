@@ -121,3 +121,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes gradient {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.6; }
+  }
+  
+  @keyframes gradient-reverse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.5; }
+  }
+  
+  .animate-gradient {
+    animation: gradient 8s ease-in-out infinite;
+  }
+  
+  .animate-gradient-reverse {
+    animation: gradient-reverse 10s ease-in-out infinite;
+  }
+  
+  .bg-gradient-radial {
+    background-image: radial-gradient(circle at center, var(--tw-gradient-stops));
+  }
+}

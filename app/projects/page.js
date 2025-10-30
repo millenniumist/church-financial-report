@@ -1,5 +1,13 @@
 import { getProjectData } from '@/lib/sheets';
 import Link from 'next/link';
+import { generateMetadata as genMetadata } from '@/lib/seo';
+
+export const metadata = genMetadata({
+  title: 'โครงการ',
+  description: 'โครงการและเป้าหมายของคริสตจักรชลบุรี ภาค7 - ร่วมสนับสนุนโครงการในอนาคต',
+  path: '/projects',
+  keywords: ['โครงการ', 'เป้าหมาย', 'การสนับสนุน'],
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +25,7 @@ export default async function ProjectsPage() {
     data = await getProjectData();
   } catch (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <div data-slot="card" className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl p-6 border shadow-sm">
             <h2 className="text-lg font-semibold text-destructive">เกิดข้อผิดพลาด</h2>
@@ -31,9 +39,9 @@ export default async function ProjectsPage() {
   const { projects } = data;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="border-b">
+      <section>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div className="text-center space-y-3">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight">
@@ -112,7 +120,7 @@ export default async function ProjectsPage() {
       </section>
 
       {/* Navigation */}
-      <section className="py-8 border-t">
+      <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Link
             href="/"
