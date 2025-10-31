@@ -1,0 +1,45 @@
+services:
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cc-financial-app
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Google Sheets
+      GOOGLE_SERVICE_ACCOUNT_PATH: /app/privatekey-gsheet.json
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID}
+      # Database
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  cron-worker:
+    build:
+      context: ./docker/cron
+      dockerfile: Dockerfile
+    container_name: cc-financial-cron
+    environment:
+      API_URL: http://nextjs-app:3000/api/cron/sync-financial
+      TIMEOUT: 30
+      TZ: Asia/Bangkok
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      nextjs-app:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge

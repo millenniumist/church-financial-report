@@ -1,4 +1,4 @@
-import { getFinancialData } from '@/lib/sheets';
+import { getFinancialDataFromDB } from '@/lib/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import PageWrapper from '@/components/PageWrapper';
@@ -17,7 +17,7 @@ export default async function FinancialPage() {
   let error = null;
 
   try {
-    data = await getFinancialData();
+    data = await getFinancialDataFromDB();
   } catch (err) {
     error = err.message;
   }

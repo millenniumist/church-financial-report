@@ -47,3 +47,5 @@ privatekey-gsheet.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
