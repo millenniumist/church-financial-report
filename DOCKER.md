@@ -1,273 +1,225 @@
 # Docker Deployment Guide
 
-Self-hosted deployment with automated cron jobs for data synchronization.
+Self-host this project with Docker.
 
 ## 📋 Overview
 
-This setup includes:
-- **Next.js Application** - Main web application
-- **Cron Worker** - Automated data sync from Google Sheets to database
-- **Prisma + PostgreSQL** - Database with Prisma Accelerate
+This stack includes:
+- **Next.js application** (`nextjs-app` service)
+- **Prisma** client bundled into the app container; connect it to any PostgreSQL-compatible database
+- **Sync API** endpoint (`/api/sync-financial`) that can be called from Google Apps Script to sync financial data on-demand
 
 ## 🚀 Quick Start
 
 ### 1. Configure Environment
 
-Create `.env.local` with required variables:
-
-```env
-# Database
-DATABASE_URL="prisma+postgres://accelerate.prisma-data.net/?api_key=YOUR_API_KEY"
-
-# Google Sheets
-GOOGLE_SHEETS_SPREADSHEET_ID="your-spreadsheet-id"
+```bash
+cp .env.example .env
+# Fill in DATABASE_URL, GOOGLE_SHEETS_SPREADSHEET_ID, credentials, etc.
 ```
 
-### 2. Deploy to Hosting Directory
+You can keep using `.env`, or create another file (for example, `.env.production`) and pass it as the first argument to `deploy.sh`.
+
+### 2. Build & Run
 
 ```bash
-# Run deployment script
-./deploy.sh
-
-# Or manually copy to hosting directory
-rsync -av --exclude='node_modules' --exclude='.next' . /Users/suparit/Desktop/code/hosting/app/
+# From the repository root
+ ./deploy.sh               # or ./deploy.sh .env.production
 ```
 
-### 3. Build and Run
+To deploy over SSH instead of locally:
 
 ```bash
-cd /Users/suparit/Desktop/code/hosting
-
-# Build and start services
-docker-compose -f docker-compose.selfhost.yml up -d --build
-
-# View logs
-docker-compose -f docker-compose.selfhost.yml logs -f
+./deploy.sh --remote user@your-host:/srv/cc-financial
 ```
 
-### 4. Verify Deployment
+The script creates a single SSH control connection, so you only enter your password once. It then syncs the project, runs `docker compose up -d --build`, and shows container status on the target host.
+
+If port 3000 is already in use locally, the script will tell you which processes or containers occupy it and ask whether to stop them before continuing.
+If `.env` is absent, the script automatically falls back to `.env.local`, verifies that `DATABASE_URL` and `GOOGLE_SHEETS_SPREADSHEET_ID` exist, and drops a `.env` symlink so follow-up commands like `docker compose logs -f` pick up the same credentials.
+
+### 3. Verify Deployment
 
 ```bash
-# Check health
 curl http://localhost:3000/api/health
-
-# Manual sync test
-curl http://localhost:3000/api/cron/sync-financial
-
-# View financial data
+curl http://localhost:3000/api/sync-financial
 curl http://localhost:3000/api/financial
 ```
 
-## ⏰ Cron Job Configuration
+## 🔄 Syncing Financial Data
 
-### Default Schedule
+Instead of using a cron job, this application provides a REST API endpoint that can be called from Google Apps Script to sync data on-demand.
 
-The cron worker syncs data **every 6 hours** by default.
+### Setting up Google Apps Script Trigger
 
-### Modify Schedule
+1. Open your Google Sheets document
+2. Go to **Extensions** → **Apps Script**
+3. Create a new script with the following code:
 
-Edit `docker/cron/crontab`:
+```javascript
+// Configuration
+const API_URL = 'https://your-domain.com/api/sync-financial';
+const API_KEY = 'your-sync-api-key'; // Set this in your .env as SYNC_API_KEY
 
-```bash
-# Every 6 hours (default)
-0 */6 * * * /usr/local/bin/sync-financial.sh >> /var/log/cron.log 2>&1
+function syncFinancialData() {
+  try {
+    const options = {
+      method: 'post',
+      headers: {
+        'x-api-key': API_KEY,
+        'Content-Type': 'application/json'
+      },
+      muteHttpExceptions: true
+    };
 
-# Every hour
-0 * * * * /usr/local/bin/sync-financial.sh >> /var/log/cron.log 2>&1
+    const response = UrlFetchApp.fetch(API_URL, options);
+    const result = JSON.parse(response.getContentText());
 
-# Daily at 2 AM
-0 2 * * * /usr/local/bin/sync-financial.sh >> /var/log/cron.log 2>&1
+    if (result.success) {
+      Logger.log(`✅ Sync successful: ${result.message}`);
+      Logger.log(`Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}`);
+    } else {
+      Logger.log(`❌ Sync failed: ${result.error}`);
+    }
 
-# Every 30 minutes
-*/30 * * * * /usr/local/bin/sync-financial.sh >> /var/log/cron.log 2>&1
+    return result;
+  } catch (error) {
+    Logger.log(`❌ Error syncing: ${error.message}`);
+    throw error;
+  }
+}
+
+// Optional: Set up a time-based trigger
+function createTrigger() {
+  // Delete existing triggers for this function
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'syncFinancialData') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+
+  // Create a new trigger - runs every 6 hours
+  ScriptApp.newTrigger('syncFinancialData')
+    .timeBased()
+    .everyHours(6)
+    .create();
+
+  Logger.log('✅ Trigger created: syncFinancialData will run every 6 hours');
+}
 ```
 
-After modifying, rebuild and restart:
+4. Run `createTrigger()` once to set up automatic syncing every 6 hours
+5. Or run `syncFinancialData()` manually whenever you want to sync
+
+### Alternative: Manual Trigger Button in Sheets
+
+You can also add a button in your Google Sheet to trigger the sync:
+
+1. Insert a drawing or shape in your sheet
+2. Right-click it and select **Assign script**
+3. Enter `syncFinancialData` as the function name
+
+Now clicking the button will sync the data to your database.
+
+### Testing the Sync Endpoint
+
+Test the API directly with curl:
 
 ```bash
-docker-compose -f docker-compose.selfhost.yml up -d --build cron-worker
+# With API key
+curl -X POST http://localhost:3000/api/sync-financial \
+  -H "x-api-key: your-sync-api-key"
+
+# Or with Bearer token
+curl -X POST http://localhost:3000/api/sync-financial \
+  -H "Authorization: Bearer your-sync-api-key"
+```
+
+Response example:
+```json
+{
+  "success": true,
+  "message": "Synced 12 financial records",
+  "created": 0,
+  "updated": 2,
+  "skipped": 10,
+  "total": 12,
+  "timestamp": "2025-10-31T10:30:00.000Z"
+}
 ```
 
 ## 🔧 Maintenance
 
-### View Logs
-
 ```bash
-# All services
-docker-compose -f docker-compose.selfhost.yml logs -f
+# Tail all logs
+docker compose logs -f
 
-# Just app
-docker-compose -f docker-compose.selfhost.yml logs -f nextjs-app
+# Tail only the app
+docker compose logs -f nextjs-app
 
-# Just cron
-docker-compose -f docker-compose.selfhost.yml logs -f cron-worker
+# Restart services
+docker compose restart nextjs-app
+
+# Stop everything
+docker compose down
 ```
 
-### Manual Sync
+When deploying remotely, run the same commands through SSH, for example:
 
 ```bash
-# From host
-curl http://localhost:3000/api/cron/sync-financial
-
-# From inside cron container
-docker exec cc-financial-cron /usr/local/bin/sync-financial.sh
+ssh user@host "cd /srv/cc-financial && docker compose logs -f"
 ```
 
-### Restart Services
+## 🔄 Updating the App
 
 ```bash
-# Restart all
-docker-compose -f docker-compose.selfhost.yml restart
-
-# Restart specific service
-docker-compose -f docker-compose.selfhost.yml restart nextjs-app
-docker-compose -f docker-compose.selfhost.yml restart cron-worker
+git pull                # or merge your changes locally
+./deploy.sh             # rebuilds and restarts containers
 ```
 
-### Update Application
-
-```bash
-# 1. Update code in cc-financial directory
-cd /Users/suparit/Desktop/code/cc-financial
-git pull  # or make changes
-
-# 2. Deploy updates
-./deploy.sh
-
-# 3. Rebuild and restart
-cd /Users/suparit/Desktop/code/hosting
-docker-compose -f docker-compose.selfhost.yml up -d --build
-```
+If you changed environment variables, update your `.env` (or whichever file you pass to the script) before re-running the deploy.
 
 ## 🐛 Troubleshooting
 
-### Cron Jobs Not Running
+- **Database connection errors**
+  ```bash
+  docker exec cc-financial-app env | grep DATABASE_URL
+  curl http://localhost:3000/api/health
+  ```
 
-```bash
-# Check if cron worker is running
-docker ps | grep cron-worker
+- **Google Sheets issues**
+  ```bash
+  docker exec cc-financial-app ls -la /app/privatekey-gsheet.json
+  docker exec cc-financial-app env | grep GOOGLE_SHEETS_SPREADSHEET_ID
+  curl http://localhost:3000/api/sync-financial -H "x-api-key: your-key"
+  ```
 
-# View cron logs
-docker logs cc-financial-cron
+- **Sync API returns 401 Unauthorized**
+  - Check that `SYNC_API_KEY` is set in your `.env` file
+  - Verify the API key matches in both your environment and Google Apps Script
 
-# Check crontab
-docker exec cc-financial-cron cat /etc/crontabs/root
+- **Containers crash on start**
+  ```bash
+  docker compose logs
+  docker compose down
+  docker compose up -d --build
+  df -h                          # ensure there is disk space
+  ```
 
-# Manually trigger sync
-docker exec cc-financial-cron /usr/local/bin/sync-financial.sh
-```
+For remote deployments, wrap the commands in `ssh user@host "..."`.
 
-### Database Connection Errors
-
-```bash
-# Verify DATABASE_URL is set
-docker exec cc-financial-app env | grep DATABASE_URL
-
-# Test Prisma connection
-docker exec cc-financial-app npx prisma db pull
-
-# Check health endpoint
-curl http://localhost:3000/api/health
-```
-
-### Google Sheets API Errors
-
-```bash
-# Check credentials file
-docker exec cc-financial-app ls -la /app/privatekey-gsheet.json
-
-# Check spreadsheet ID
-docker exec cc-financial-app env | grep GOOGLE_SHEETS_SPREADSHEET_ID
-
-# Test sync manually
-curl http://localhost:3000/api/cron/sync-financial
-```
-
-### Container Won't Start
-
-```bash
-# Check logs for errors
-docker-compose -f docker-compose.selfhost.yml logs
-
-# Check disk space
-df -h
-
-# Remove old containers and rebuild
-docker-compose -f docker-compose.selfhost.yml down
-docker-compose -f docker-compose.selfhost.yml up -d --build
-```
-
-## 📦 File Structure
+## 📦 Relevant Files
 
 ```
-cc-financial/
-├── docker/
-│   └── cron/
-│       ├── Dockerfile          # Cron worker image
-│       ├── crontab            # Cron schedule
-│       └── sync-financial.sh  # Sync script
-├── Dockerfile                  # Main app image
-├── docker-compose.yml         # Container orchestration
-├── deploy.sh                  # Deployment script
-└── DOCKER.md                  # This file
-
-hosting/
-├── app/                       # Deployed app files (from cc-financial)
-├── cron/                      # Deployed cron files
-└── docker-compose.selfhost.yml # Production compose file
+Dockerfile             # multi-stage build for the Next.js app
+docker-compose.yml     # app service configuration
+app/api/sync-financial/route.js  # Sync endpoint implementation
 ```
 
 ## 🔐 Security Notes
 
-1. **Never commit** `.env.local` or credentials files
-2. Add authentication to cron endpoint in production:
-   ```env
-   CRON_SECRET=your-secret-token
-   ```
-3. Use Cloudflare Tunnel for external access
-4. Keep Docker images updated:
-   ```bash
-   docker-compose -f docker-compose.selfhost.yml pull
-   ```
-
-## 📊 Monitoring
-
-### Check Sync Status
-
-```bash
-# View last sync result
-docker logs cc-financial-cron --tail 20
-
-# Check database records
-curl http://localhost:3000/api/financial | jq '.monthlyData | length'
-```
-
-### Health Checks
-
-```bash
-# Application health
-curl http://localhost:3000/api/health | jq
-
-# Docker health status
-docker ps --format "table {{.Names}}\t{{.Status}}"
-```
-
-## 🌐 Cloudflare Tunnel Integration
-
-Your app runs on `localhost:3000` and is exposed via Cloudflare Tunnel.
-
-The cron worker uses the internal Docker network (`http://nextjs-app:3000`) for better performance and security.
-
-## 💡 Tips
-
-- **Logs retention**: Cron logs are stored in `/var/log/cron.log` inside the container
-- **Timezone**: Set `TZ` environment variable in docker-compose.yml
-- **Performance**: Prisma Accelerate caches queries for 60 seconds
-- **Backup**: Regular database backups recommended (Prisma Accelerate handles this)
-
-## 📝 Need Help?
-
-1. Check logs: `docker-compose logs -f`
-2. Verify environment variables are set
-3. Test endpoints manually with curl
-4. Check GitHub issues or documentation
+- **API Key Protection**: Set `SYNC_API_KEY` in your environment to protect the sync endpoint
+- If `SYNC_API_KEY` is not set, the API will work without authentication (not recommended for production)
+- Use HTTPS in production to protect the API key in transit
+- Consider using Vercel's environment variable encryption for sensitive values

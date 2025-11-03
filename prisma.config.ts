@@ -1,8 +1,19 @@
 import { config } from "dotenv";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
-// Load environment variables from .env.local
-config({ path: ".env.local" });
+// Load .env (if present) first, then override with .env.local if available.
+config({ path: ".env", override: false });
+config({ path: ".env.local", override: true });
+
+const FALLBACK_DATABASE_URL =
+  process.env.DATABASE_URL ??
+  "postgresql://placeholder:placeholder@localhost:5432/placeholder?schema=public";
+
+if (!process.env.DATABASE_URL) {
+  console.warn(
+    "DATABASE_URL not set; using placeholder connection string for Prisma client generation."
+  );
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -11,6 +22,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: env("DATABASE_URL"),
+    url: FALLBACK_DATABASE_URL,
   },
 });

@@ -28,7 +28,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Provide placeholder database URL during build to satisfy Prisma
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder?schema=public"
+
 # Build the application
+RUN if [ ! -f .env ]; then touch .env; fi
 RUN npm run build
 
 # Stage 3: Runner

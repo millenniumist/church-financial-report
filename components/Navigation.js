@@ -2,9 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const [activeTab, setActiveTab] = useState(pathname);
+
+  // Sync activeTab with pathname when navigation completes
+  useEffect(() => {
+    setActiveTab(pathname);
+  }, [pathname]);
 
   const navItems = [
     { name: 'หน้าแรก', href: '/' },
@@ -37,11 +44,12 @@ export default function Navigation() {
         <div className="flex justify-center items-center overflow-x-auto scrollbar-hide pb-4">
           <div className="flex gap-2">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = activeTab === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setActiveTab(item.href)}
                   className={`
                     relative px-4 sm:px-6 py-2.5 text-sm font-medium transition-all duration-300 rounded-full
                     ${

@@ -12,6 +12,8 @@ export const metadata = genMetadata({
   keywords: ['การเงิน', 'รายรับรายจ่าย', 'งบประมาณ', 'ความโปร่งใส'],
 });
 
+export const dynamic = 'force-dynamic';
+
 export default async function FinancialPage() {
   let data = null;
   let error = null;
