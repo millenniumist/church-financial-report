@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 import { contactInfo } from '@/lib/contact-info';
+import StickyNav from '@/components/landing/StickyNav';
 
 export const metadata = genMetadata({
   title: 'การนมัสการ',
@@ -10,8 +11,11 @@ export const metadata = genMetadata({
 });
 
 export default function WorshipPage() {
+  const currentYear = new Date().getFullYear();
   return (
-    <div className="min-h-screen">
+    <main className="bg-white">
+      <StickyNav />
+      <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
@@ -172,6 +176,74 @@ export default function WorshipPage() {
         </div>
       </section>
 
+      {/* Weekly Mission Schedule */}
+      <section className="py-20 sm:py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-block">
+              <div className="h-px w-12 bg-primary mx-auto mb-4" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">กิจกรรมรายสัปดาห์</h2>
+            <p className="text-muted-foreground text-lg">
+              กิจกรรมประจำสัปดาห์ของคริสตจักร
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="p-8 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">เยี่ยมเยียน</h3>
+                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full mb-3">
+                    วันพุธ
+                  </div>
+                  <p className="text-3xl font-bold text-primary">08:00 น.</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-8 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">นมัสการตามบ้าน</h3>
+                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full mb-3">
+                    วันพฤหัสบดี
+                  </div>
+                  <p className="text-3xl font-bold text-primary">19:00 น.</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-8 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">คืนอธิษฐาน</h3>
+                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full mb-3">
+                    วันศุกร์
+                  </div>
+                  <p className="text-3xl font-bold text-primary">19:00 น.</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* First Time Visitors */}
       <section className="py-20 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,7 +280,7 @@ export default function WorshipPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              © 2025 คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
+            © {currentYear} คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
             </p>
             <p className="text-xs text-muted-foreground">
               Chonburi Presbyterian Church - Region 7
@@ -216,6 +288,7 @@ export default function WorshipPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </main>
   );
 }

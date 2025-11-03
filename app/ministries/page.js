@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
+import StickyNav from '@/components/landing/StickyNav';
 
 export const metadata = genMetadata({
   title: 'กิจกรรม',
@@ -9,6 +10,7 @@ export const metadata = genMetadata({
 });
 
 export default function MinistriesPage() {
+  const currentYear = new Date().getFullYear();
   const ministries = [
     { title: "กลุ่มครอบครัว", schedule: "เดือนละ 1 ครั้ง • เสาร์ 16:00 น.", description: "กิจกรรมสำหรับครอบครัวคริสเตียน เพื่อสร้างความสัมพันธ์ที่แข็งแกร่ง" },
     { title: "โรงเรียนวันอาทิตย์", schedule: "ทุกวันอาทิตย์ • 09:00 น.", description: "สำหรับเด็กและเยาวชน เรียนรู้พระวจนะผ่านกิจกรรมสนุกสนาน" },
@@ -19,7 +21,9 @@ export default function MinistriesPage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <main className="bg-white">
+      <StickyNav />
+      <div className="min-h-screen">
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
@@ -122,11 +126,12 @@ export default function MinistriesPage() {
       <footer className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4">
-            <p className="text-sm text-muted-foreground">© 2025 คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์</p>
+            <p className="text-sm text-muted-foreground">© {currentYear} คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์</p>
             <p className="text-xs text-muted-foreground">Chonburi Presbyterian Church - Region 7</p>
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </main>
   );
 }

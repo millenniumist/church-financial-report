@@ -169,6 +169,43 @@ This document lists all data fields used in the Chonburi Church website applicat
 
 ---
 
+## Missions
+
+### Mission Data Structure (`lib/missions.js` / `/api/missions`)
+
+| Field Name | Type | Required | Multiple Items | Description | Example Value | Notes |
+|------------|------|----------|----------------|-------------|---------------|-------|
+| `id` | String | Yes | No | Unique identifier/slug | `"community-outreach"` | Used for routing & keys |
+| `title` | String | Yes | No | Mission title | `"ประกาศและรับใช้ชุมชน"` | Display heading |
+| `theme` | String | Yes | No | Mission tagline/focus | `"นำข่าวประเสริฐสู่คนรอบข้าง"` | Shown as subtitle |
+| `summary` | String | Yes | No | Short summary for card preview | `"สร้างสัมพันธภาพกับชุมชนชลบุรี..."` | Intro paragraph |
+| `description` | String | Yes | No | Detailed mission description | `"ทีมพันธกิจชุมชนออกเยี่ยมเยียน..."` | Displayed when expanded |
+| `focusAreas` | Array[String] | Yes | **Yes** | Key focus points | `["การประกาศ", "การช่วยเหลือสังคม"]` | Rendered as badges |
+| `scripture.reference` | String | Yes | No | Bible reference | `"มัทธิว 5:16"` | |
+| `scripture.text` | String | Yes | No | Bible verse text | `"ให้แสงสว่างของท่านฉายออกไป..."` | |
+| `nextSteps` | Array[String] | Yes | **Yes** | Actionable next steps | `["จัดค่ายประกาศสำหรับเยาวชน"]` | Rendered as list |
+| `pinned` | Boolean | Yes | No | Highlight flag | `true` | Displayed in highlight section |
+| `updatedAt` | ISO String | Yes | No | Last updated date | `"2024-09-15"` | Format: YYYY-MM-DD |
+
+**Pagination API Response (`GET /api/missions`)**
+
+```jsonc
+{
+  "pinned": [/* array of pinned missions */],
+  "missions": [/* paginated missions (non-pinned) */],
+  "pagination": {
+    "page": 1,
+    "pageSize": 4,
+    "totalItems": 4,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
+
+---
+
 ## Navigation Items
 
 ### Navigation Item Structure (components/Navigation.js)

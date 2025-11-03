@@ -1,6 +1,7 @@
 import { getProjectData } from '@/lib/sheets';
 import Link from 'next/link';
 import { generateMetadata as genMetadata } from '@/lib/seo';
+import StickyNav from '@/components/landing/StickyNav';
 
 export const metadata = genMetadata({
   title: 'โครงการ',
@@ -39,7 +40,9 @@ export default async function ProjectsPage() {
   const { projects } = data;
 
   return (
-    <div className="min-h-screen">
+    <main className="bg-white">
+      <StickyNav />
+      <div className="min-h-screen">
       {/* Hero Section */}
       <section>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -130,6 +133,7 @@ export default async function ProjectsPage() {
           </Link>
         </div>
       </section>
-    </div>
+      </div>
+    </main>
   );
 }

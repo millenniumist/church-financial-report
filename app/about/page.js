@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
+import StickyNav from '@/components/landing/StickyNav';
 
 export const metadata = genMetadata({
   title: 'เกี่ยวกับเรา',
@@ -9,8 +10,11 @@ export const metadata = genMetadata({
 });
 
 export default function AboutPage() {
+  const currentYear = new Date().getFullYear();
   return (
-    <div className="min-h-screen">
+    <main className="bg-white">
+      <StickyNav />
+      <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -38,17 +42,52 @@ export default function AboutPage() {
                   <div className="h-px w-12 bg-primary mb-4" />
                 </div>
                 <h2 className="text-3xl font-bold mb-6">ประวัติคริสตจักร</h2>
+                <p className="text-primary text-lg font-medium">มากกว่า 100 ปี แห่งพระคุณของพระเจ้า</p>
               </div>
-              <div className="space-y-4 text-muted-foreground text-lg leading-relaxed">
-                <p>
-                  คริสตจักรชลบุรี ภาค7 เป็นส่วนหนึ่งของคริสตจักรเพรสไบทีเรียนในประเทศไทย
-                  ที่มุ่งเน้นในการเผยแพร่ข่าวประเสริฐและสร้างชุมชนแห่งความเชื่อ
-                </p>
-                <p>
-                  เราเชื่อในการนมัสการพระเจ้าด้วยความจริงใจ
-                  การศึกษาพระคัมภีร์อย่างลึกซึ้ง
-                  และการรับใช้สังคมด้วยความรักและความเมตตา
-                </p>
+              <div className="space-y-6 text-muted-foreground leading-relaxed">
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3">การก่อตั้ง (พ.ศ. 2458-2463)</h3>
+                  <p>
+                    คริสตจักรชลบุรีก่อตั้งในปี พ.ศ. 2464 โดยมิชชันนารี กราฮัม ฟุลเลอร์
+                    เริ่มแรกประชุมที่บ้านเช่าในซอยนางแก้ว มีสมาชิกเพียง 3 คนเท่านั้น
+                    คริสตจักรเริ่มต้นภายใต้สังกัดนิกายเพรสไบทีเรียน
+                    ก่อนจะรวมเข้ากับโครงสร้างคริสตจักรไทยที่ใหญ่ขึ้น
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3">การจัดตั้งเป็นคริสตจักร (พ.ศ. 2473-2483)</h3>
+                  <p>
+                    ในปี พ.ศ. 2477 คริสตจักรเข้าร่วม "สภาคริสตจักรในสยาม" ในนาม คริสตจักรภาค 7
+                    ประกอบด้วยคริสตจักรชาวจีน 7 แห่ง วันที่ 17 พฤศจิกายน พ.ศ. 2490
+                    คริสตจักรได้ซื้อที่ดิน 2 ไร่ 2 งาน 47 ตารางวา ในราคา 6,000 บาท
+                    ซึ่งเป็นที่ตั้งปัจจุบัน
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3">การเติบโตและพัฒนา (พ.ศ. 2491-2543)</h3>
+                  <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                    <p><span className="font-medium">30 พฤษภาคม 2491:</span> พิธีวางศิลาฤกษ์โบสถ์หลังใหม่</p>
+                    <p><span className="font-medium">20 กรกฎาคม 2495:</span> อุทิศโบสถ์หลังใหม่</p>
+                    <p><span className="font-medium">พ.ศ. 2528 เป็นต้นไป:</span> เริ่มโครงการก่อสร้างใหม่</p>
+                    <p><span className="font-medium">27 มิถุนายน 2536:</span> วางศิลาฤกษ์โบสถ์ใหม่</p>
+                    <p><span className="font-medium">มีนาคม 2540:</span> ก่อสร้างโบสถ์แล้วเสร็จ (งบประมาณ 12.9 ล้านบาท)</p>
+                    <p><span className="font-medium">3 พฤศจิกายน 2540:</span> วางศิลาฤกษ์อาคารอเนกประสงค์</p>
+                    <p><span className="font-medium">มีนาคม 2542:</span> อาคารอเนกประสงค์แล้วเสร็จ (งบประมาณ 5.8 ล้านบาท)</p>
+                  </div>
+                  <p className="mt-3 text-sm">
+                    งบประมาณก่อสร้างรวมทั้งสิ้น: <span className="font-semibold text-foreground">20,643,351.26 บาท</span>
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3">ยุคปัจจุบัน (พ.ศ. 2543-ปัจจุบัน)</h3>
+                  <p>
+                    คริสตจักรยังคงเติบโตและรับใช้ชุมชน ภายใต้การนำของคณะผู้นำและอาจารย์
+                    ที่มุ่งมั่นในการเผยแพร่ข่าวประเสริฐและสร้างชุมชนแห่งความเชื่อ
+                  </p>
+                </div>
               </div>
             </div>
           </Card>
@@ -175,7 +214,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              © 2025 คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
+            © {currentYear} คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
             </p>
             <p className="text-xs text-muted-foreground">
               Chonburi Presbyterian Church - Region 7
@@ -183,6 +222,7 @@ export default function AboutPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </main>
   );
 }

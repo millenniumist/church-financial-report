@@ -1,7 +1,7 @@
 import { getFinancialDataFromDB } from '@/lib/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import PageWrapper from '@/components/PageWrapper';
+import StickyNav from '@/components/landing/StickyNav';
 import FinancialDisplay from '@/components/FinancialDisplay';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 
@@ -12,9 +12,11 @@ export const metadata = genMetadata({
   keywords: ['การเงิน', 'รายรับรายจ่าย', 'งบประมาณ', 'ความโปร่งใส'],
 });
 
-export const dynamic = 'force-dynamic';
+// Cache for 60 seconds to improve performance
+export const revalidate = 60;
 
 export default async function FinancialPage() {
+  const currentYear = new Date().getFullYear();
   let data = null;
   let error = null;
 
@@ -51,34 +53,21 @@ export default async function FinancialPage() {
   }
 
   return (
-    <PageWrapper>
-      <div className="min-h-screen bg-background">
-        <FinancialDisplay initialData={data} />
+    <main className="bg-white">
+      <StickyNav />
+      <FinancialDisplay initialData={data} />
 
-        {/* Navigation - Commented out until real project data is available */}
-        {/* <section className="py-8 border-t">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <Link
-              href="/projects"
-              className="inline-block text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              ดูโครงการในอนาคต →
-            </Link>
-          </div>
-        </section> */}
-
-        {/* Footer */}
-        <footer className="border-t py-8 bg-muted/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-sm text-muted-foreground">
-              ข้อมูลการเงินถูกรวมกลุ่มเป็นหมวดหมู่ระดับสูงเพื่อความโปร่งใสและการรักษาความเป็นส่วนตัว
-            </p>
-            <p className="text-center text-sm text-muted-foreground mt-2">
-              © 2025 คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
-            </p>
-          </div>
-        </footer>
-      </div>
-    </PageWrapper>
+      {/* Footer */}
+      <footer className="border-t py-8 bg-muted/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-muted-foreground">
+            ข้อมูลการเงินถูกรวมกลุ่มเป็นหมวดหมู่ระดับสูงเพื่อความโปร่งใสและการรักษาความเป็นส่วนตัว
+          </p>
+          <p className="text-center text-sm text-muted-foreground mt-2">
+            © {currentYear} คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
+          </p>
+        </div>
+      </footer>
+    </main>
   );
 }

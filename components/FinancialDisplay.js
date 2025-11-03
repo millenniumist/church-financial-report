@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableRow } from '@/components/ui/table';
 import MonthlyTable from '@/components/MonthlyTable';
@@ -9,10 +9,14 @@ import { getAdminSettings } from '@/lib/adminSettings';
 
 export default function FinancialDisplay({ initialData }) {
   const [data, setData] = useState(initialData);
-  const [isLoading, setIsLoading] = useState(false);
-  // console.log(data," initialData");
+  const [isLoading, setIsLoading] = useState(true);
+  const hasFetched = useRef(false); // Prevent double-fetching
 
   useEffect(() => {
+    // Only fetch once
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
     const loadDataWithSettings = async () => {
       setIsLoading(true);
 
