@@ -1,4 +1,4 @@
-import { getFinancialDataFromDB } from '@/lib/database';
+import { getFinancialOverview } from '@/lib/financial';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import StickyNav from '@/components/landing/StickyNav';
@@ -21,7 +21,7 @@ export default async function FinancialPage() {
   let error = null;
 
   try {
-    data = await getFinancialDataFromDB();
+    data = await getFinancialOverview();
   } catch (err) {
     error = err.message;
   }

@@ -1,17 +1,59 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useScroll, useTransform, motion } from "framer-motion";
-import { useRef } from "react";
+
+const DEFAULT_CONTENT = {
+  title: "สร้างความเชื่อมั่น",
+  headline: "ทุกบาททุกสตางค์ได้รับการบันทึก ตรวจสอบ และรายงานอย่างโปร่งใส",
+  cta: {
+    label: "ดูรายงานการเงิน",
+    href: "/financial",
+  },
+};
 
 export default function LandingPromo() {
   const container = useRef();
+  const [content, setContent] = useState(DEFAULT_CONTENT);
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ["start end", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], ["-10vh", "10vh"]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadContent() {
+      try {
+        const res = await fetch("/api/page-content/landing?section=promo");
+        if (!res.ok) return;
+        const data = await res.json();
+        const section = data?.sections?.[0];
+        if (!cancelled && section) {
+          setContent({
+            title: section.title ?? DEFAULT_CONTENT.title,
+            headline: section.description ?? DEFAULT_CONTENT.headline,
+            cta: {
+              label: section.body?.cta?.label ?? DEFAULT_CONTENT.cta.label,
+              href: section.body?.cta?.href ?? DEFAULT_CONTENT.cta.href,
+            },
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setContent(DEFAULT_CONTENT);
+        }
+      }
+    }
+
+    loadContent();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div
@@ -32,18 +74,18 @@ export default function LandingPromo() {
       </div>
 
       <h3 className="absolute top-12 right-6 text-white uppercase z-10 text-sm md:text-base lg:text-lg font-semibold tracking-wide">
-        สร้างความเชื่อมั่น
+        {content.title}
       </h3>
 
       <div className="absolute bottom-12 right-6 flex flex-col items-end gap-6 text-right z-10 max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-5xl">
         <p className="text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl leading-tight font-bold">
-          ทุกบาททุกสตางค์ได้รับการบันทึก ตรวจสอบ และรายงานอย่างโปร่งใส
+          {content.headline}
         </p>
         <Link
-          href="/financial"
+          href={content.cta?.href ?? DEFAULT_CONTENT.cta.href}
           className="inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg transition hover:bg-primary/90 hover:text-white"
         >
-          ดูรายงานการเงิน
+          {content.cta?.label ?? DEFAULT_CONTENT.cta.label}
           <span aria-hidden="true">→</span>
         </Link>
       </div>

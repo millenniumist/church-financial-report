@@ -21,6 +21,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   engine: "classic",
+  seed: "node prisma/seed.js",
   datasource: {
     url: FALLBACK_DATABASE_URL,
   },

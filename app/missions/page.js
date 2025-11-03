@@ -15,9 +15,9 @@ export const metadata = genMetadata({
 
 export const dynamic = 'force-dynamic';
 
-export default function MissionsPage({ searchParams }) {
+export default async function MissionsPage({ searchParams }) {
   const page = Number.parseInt(searchParams?.page || '1', 10);
-  const { pinned, missions, pagination } = getMissions({
+  const { pinned, missions, pagination } = await getMissions({
     page: Number.isNaN(page) ? 1 : page,
     pageSize: 4,
   });
@@ -136,4 +136,3 @@ export default function MissionsPage({ searchParams }) {
     </main>
   );
 }
-

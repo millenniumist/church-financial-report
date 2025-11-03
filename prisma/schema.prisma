@@ -20,6 +20,8 @@ model FinancialRecord {
   expenses  Float
   balance   Float
   notes     String?
+  incomeDetails Json?
+  expenseDetails Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -38,4 +40,91 @@ model FutureProject {
   updatedAt   DateTime @updatedAt
 
   @@index([priority])
+}
+
+model Mission {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        Json
+  theme        Json
+  summary      Json
+  description  Json
+  focusAreas   Json
+  scripture    Json?
+  nextSteps    Json
+  pinned       Boolean  @default(false)
+  heroImageUrl String?
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([pinned, updatedAt])
+}
+
+model ContactInfo {
+  id           Int      @id @default(1)
+  name         Json
+  phone        String?
+  email        String?
+  address      Json
+  social       Json
+  mapEmbedUrl  String?
+  coordinates  Json
+  worshipTimes Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model NavigationItem {
+  id        String   @id @default(cuid())
+  label     Json
+  href      String
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+model PageContent {
+  id         String   @id @default(cuid())
+  page       String
+  section    String
+  title      Json?
+  subtitle   Json?
+  description Json?
+  body       Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([page, section])
+}
+
+model FinancialCategory {
+  id            String   @id @default(cuid())
+  code          String   @unique  // Unique identifier (e.g., "offering", "salary")
+  name          String              // Display name (e.g., "ค่าถวาย", "เงินเดือน")
+  type          String              // "income" or "expense"
+  visible       Boolean  @default(true)
+  aggregateInto String?             // Category to aggregate into (optional)
+  order         Int      @default(0) // Display order
+  year          Int?                // Year this category applies to (null = all years)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type, order])
+  @@index([year, type])
+}
+
+model CategorySettings {
+  id        String   @id @default(cuid())
+  year      Int                   // Settings are year-specific
+  settings  Json                  // Stores visibility and aggregation settings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([year])
 }

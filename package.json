@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "prisma db seed",
+    "cleanup:financial": "node scripts/cleanupFinancialRecords.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.61",

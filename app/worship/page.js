@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
-import { contactInfo } from '@/lib/contact-info';
+import { getContactInfo } from '@/lib/contact-info';
 import StickyNav from '@/components/landing/StickyNav';
 
 export const metadata = genMetadata({
@@ -10,7 +10,25 @@ export const metadata = genMetadata({
   keywords: ['นมัสการ', 'เวลานมัสการ', 'อธิษฐาน'],
 });
 
-export default function WorshipPage() {
+export default async function WorshipPage() {
+  const contactInfo = await getContactInfo('th');
+
+  if (!contactInfo) {
+    return (
+      <main className="bg-white">
+        <StickyNav />
+        <section className="min-h-screen flex items-center justify-center px-6 py-24">
+          <div className="max-w-md text-center space-y-4">
+            <h1 className="text-2xl font-semibold text-slate-900">ยังไม่มีข้อมูลเวลานมัสการ</h1>
+            <p className="text-slate-600">
+              กรุณาเพิ่มข้อมูลเวลานมัสการผ่านระบบจัดการ หรือรอดำเนินการจากผู้ดูแลเว็บไซต์
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   const currentYear = new Date().getFullYear();
   return (
     <main className="bg-white">

@@ -4,10 +4,21 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
+const DEFAULT_NAV_ITEMS = [
+  { id: 'home', name: 'หน้าแรก', href: '/' },
+  { id: 'about', name: 'เกี่ยวกับเรา', href: '/about' },
+  { id: 'worship', name: 'การนมัสการ', href: '/worship' },
+  { id: 'missions', name: 'พันธกิจ', href: '/missions' },
+  { id: 'ministries', name: 'กิจกรรม', href: '/ministries' },
+  { id: 'financial', name: 'การเงิน', href: '/financial' },
+  { id: 'contact', name: 'ติดต่อเรา', href: '/contact' },
+];
+
 export default function Navigation() {
   const pathname = usePathname();
   const [activeTab, setActiveTab] = useState(pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [navItems, setNavItems] = useState(DEFAULT_NAV_ITEMS);
 
   // Sync activeTab with pathname when navigation completes
   useEffect(() => {
@@ -15,16 +26,38 @@ export default function Navigation() {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  const navItems = [
-    { name: 'หน้าแรก', href: '/' },
-    { name: 'เกี่ยวกับเรา', href: '/about' },
-    { name: 'การนมัสการ', href: '/worship' },
-    { name: 'พันธกิจ', href: '/missions' },
-    { name: 'กิจกรรม', href: '/ministries' },
-    { name: 'การเงิน', href: '/financial' },
-    // { name: 'โครงการ', href: '/projects' }, // Commented out until real data available
-    { name: 'ติดต่อเรา', href: '/contact' },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNavigation() {
+      try {
+        const response = await fetch('/api/navigation?locale=th');
+        if (!response.ok) {
+          throw new Error('Failed to load navigation items');
+        }
+        const data = await response.json();
+        if (!cancelled && Array.isArray(data.items) && data.items.length) {
+          setNavItems(
+            data.items.map((item) => ({
+              id: item.id,
+              name: item.label ?? item.href,
+              href: item.href,
+            }))
+          );
+        }
+      } catch (error) {
+        console.warn('Navigation fallback to defaults', error);
+        if (!cancelled) {
+          setNavItems(DEFAULT_NAV_ITEMS);
+        }
+      }
+    }
+
+    loadNavigation();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <nav className="backdrop-blur-xl bg-white/30 border-b border-white/20 sticky top-0 z-50 shadow-lg shadow-blue-100/20">
