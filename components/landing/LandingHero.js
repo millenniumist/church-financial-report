@@ -136,10 +136,10 @@ export default function LandingHero() {
       {/* Hero Content with Parallax */}
       <motion.div ref={container} style={{ y }} className="relative min-h-screen">
         <Image
-          src="/images/mountain-landscape.jpg"
+          src="/images/landing-hero.png"
           fill
-          alt="Church background"
-          style={{ objectFit: "cover" }}
+          alt="Congregation worship service inside a modern church"
+          className="object-cover filter grayscale"
           priority
         />
         <div className="absolute inset-0 bg-black/30" />

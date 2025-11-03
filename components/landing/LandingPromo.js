@@ -22,10 +22,10 @@ export default function LandingPromo() {
       <div className="fixed top-[-10vh] left-0 h-[120vh] w-full">
         <motion.div style={{ y }} className="relative w-full h-full">
           <Image
-            src="/images/spiral-circles.jpg"
+            src="/images/image.png"
             fill
-            alt="Abstract background"
-            style={{ objectFit: "cover" }}
+            alt="Worship band leading music on a church stage"
+            className="object-cover filter grayscale"
           />
           <div className="absolute inset-0 bg-black/40" />
         </motion.div>
