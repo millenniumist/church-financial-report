@@ -40,10 +40,10 @@ export default function LandingFooter() {
                   ข้อมูล
                 </h3>
                 <Link
-                  href="/missions"
+                  href="/financial"
                   className="text-white hover:text-neutral-400 transition-colors duration-300 text-sm sm:text-base"
                 >
-                  ข่าวประเสริฐ
+                  การเงิน
                 </Link>
                 <Link
                   href="/missions"

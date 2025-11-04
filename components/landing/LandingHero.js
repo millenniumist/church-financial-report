@@ -97,18 +97,15 @@ export default function LandingHero() {
         if (!res.ok) throw new Error("Failed to load navigation");
         const data = await res.json();
         if (!cancelled && Array.isArray(data.items) && data.items.length) {
-          const sanitized = data.items.filter(
-            (item) => item.href !== "/" && item.href !== "/financial"
-          );
-          if (sanitized.length) {
-            setNavItems(
-              sanitized.map((item) => ({
+          setNavItems(
+            data.items
+              .filter((item) => item.href !== "/")
+              .map((item) => ({
                 id: item.id,
                 name: item.label ?? item.href,
                 href: item.href,
               }))
-            );
-          }
+          );
         }
       } catch (error) {
         if (!cancelled) {
