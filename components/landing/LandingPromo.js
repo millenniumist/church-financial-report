@@ -7,7 +7,7 @@ import { useScroll, useTransform, motion } from "framer-motion";
 
 const DEFAULT_CONTENT = {
   title: "สร้างความเชื่อมั่น",
-  headline: "ทุกบาททุกสตางค์ได้รับการบันทึก ตรวจสอบ และรายงานอย่างโปร่งใส",
+  headline: "Full Gospel – พระกิตติคุณเพื่อทุกคน",
   cta: {
     label: "ดูรายงานการเงิน",
     href: "/financial",

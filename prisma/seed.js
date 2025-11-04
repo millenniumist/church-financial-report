@@ -460,7 +460,7 @@ const pageContentSeed = [
       en: 'Building trust together',
     },
     description: {
-      th: 'ทุกบาททุกสตางค์ได้รับการบันทึก ตรวจสอบ และรายงานอย่างโปร่งใส',
+      th: 'Full Gospel – พระกิตติคุณเพื่อทุกคน',
       en: 'Every baht is recorded, audited, and reported with transparency.',
     },
     body: {
