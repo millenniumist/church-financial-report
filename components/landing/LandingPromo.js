@@ -60,20 +60,19 @@ export default function LandingPromo() {
               </div>
 
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight tracking-tight">
-                <span className="text-white/90">บรรดาผู้เหน็ดเหนื่อย</span>
+                <span className="text-white/90">&ldquo;บรรดาผู้ที่เหน็ดเหนื่อย</span>
                 <br />
-                <span className="text-white/90">และแบกภาระหนัก</span>
+                <span className="text-white/90">และแบกหนักอยู่</span>
                 <br />
-                
                 <span className="text-white/80">จงมาหาเรา</span>
                 <br />
                 <span className="bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                  และเราจะให้ท่านทั้งหลายได้หยุดพัก"
+                  และเราจะให้ท่านทั้งหลายได้หยุดพัก&rdquo;
                 </span>
               </h2>
 
               <p className="text-white/80 text-lg sm:text-xl md:text-2xl font-light tracking-wide">
-                มัทธิว 11:28
+                มัทธิว 11:28 (THSV2011)
               </p>
             </motion.div>
           </div>
@@ -95,28 +94,27 @@ export default function LandingPromo() {
 
               <div className="space-y-4 text-base sm:text-lg md:text-xl leading-relaxed text-white/90">
                 <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  "เพราะว่าพระเจ้าทรงรักโลกมากจนได้ทรงประทานพระบุตรองค์เดียวของพระองค์
-                  เพื่อทุกคนที่วางใจในพระบุตรนั้นจะไม่พินาศ แต่มีชีวิตนิรันดร"
+                  &ldquo;เพราะว่าพระเจ้าทรงรักโลก จนได้ประทานพระบุตรองค์เดียวของพระองค์
+                  เพื่อทุกคนที่เชื่อในพระบุตรนั้นจะไม่พินาศ แต่มีชีวิตนิรันดร์&rdquo;
                   <span className="block mt-3 text-sm text-white/60">
-                    — ยอห์น 3:16
+                    — ยอห์น 3:16 (THSV2011)
                   </span>
                 </p>
 
                 <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  "พระคริสต์ทรงสิ้นพระชนม์เพื่อบาปของเราทั้งหลาย ตามพระคัมภีร์
-                  และพระองค์ทรงถูกฝังไว้ และวันที่สามพระองค์ทรงเป็นขึ้นมา
-                  ตามพระคัมภีร์"
+                  &ldquo;เพราะว่าข้าพเจ้ามอบเรื่องที่สำคัญที่สุดให้แก่ท่าน ตามที่ข้าพเจ้าได้รับมาแล้วว่า
+                  พระคริสต์ทรงสิ้นพระชนม์เพื่อบาปของเราตามพระคัมภีร์ และว่าพระองค์ทรงถูกฝังไว้
+                  และว่าพระองค์ทรงเป็นขึ้นมาในวันที่สามตามพระคัมภีร์&rdquo;
                   <span className="block mt-3 text-sm text-white/60">
-                    — 1 โครินธ์ 15:3-4
+                    — 1 โครินธ์ 15:3-4 (THSV2011)
                   </span>
                 </p>
 
                 <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  "ท่านทั้งหลายรอดโดยพระคุณ ทางความเชื่อ
-                  และความรอดนั้นไม่ได้มาจากตัวท่านเอง แต่เป็นของประทานจากพระเจ้า
-                  ไม่ได้มาจากการกระทำ เพื่อจะไม่มีใครอวดได้"
+                  &ldquo;เพราะว่าท่านทั้งหลายรอดแล้วโดยพระคุณทางความเชื่อ และนั่นไม่ได้มาจากตัวท่านเอง
+                  แต่เป็นของประทานจากพระเจ้า ไม่ได้มาจากการกระทำ เพื่อจะไม่มีใครอวดได้&rdquo;
                   <span className="block mt-3 text-sm text-white/60">
-                    — เอเฟซัส 2:8-9
+                    — เอเฟซัส 2:8-9 (THSV2011)
                   </span>
                 </p>
               </div>
@@ -134,10 +132,10 @@ export default function LandingPromo() {
             className="space-y-6"
           >
             <p className="text-white/90 text-xl sm:text-2xl md:text-3xl font-light italic">
-              "เหตุฉะนั้น ถ้าผู้ใดอยู่ในพระคริสต์
+              &ldquo;เหตุฉะนั้น ถ้าผู้ใดอยู่ในพระคริสต์
               ผู้นั้นก็เป็นคนที่ถูกสร้างขึ้นใหม่แล้ว
               <br />
-              สิ่งเก่าๆ ล่วงไปแล้ว ดูเถิด สิ่งใหม่ได้มาถึงแล้ว"
+              สิ่งเก่าๆ ล่วงไปแล้ว ดูเถิด สิ่งใหม่ได้มาถึงแล้ว&rdquo;
             </p>
 
             <p className="text-white/70 text-lg sm:text-xl">2 โครินธ์ 5:17</p>
