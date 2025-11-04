@@ -1,7 +1,7 @@
-import { getProjectData } from '@/lib/sheets';
 import Link from 'next/link';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 import StickyNav from '@/components/landing/StickyNav';
+import { prisma } from '@/lib/prisma';
 
 export const metadata = genMetadata({
   title: 'โครงการ',
@@ -11,6 +11,7 @@ export const metadata = genMetadata({
 });
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Revalidate every 60 seconds
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat('th-TH', {
@@ -19,11 +20,36 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
+async function getProjects() {
+  // Fetch directly from database to avoid fetch issues
+  const projects = await prisma.futureProject.findMany({
+    where: { isActive: true },
+    orderBy: [
+      { priority: 'desc' },
+      { createdAt: 'asc' }
+    ]
+  });
+
+  // Transform to match expected format
+  return projects.map(project => ({
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    goal: project.targetAmount,
+    current: project.currentAmount,
+    percentage: project.targetAmount > 0
+      ? Math.round((project.currentAmount / project.targetAmount) * 100)
+      : 0,
+    priority: project.priority,
+    isActive: project.isActive
+  }));
+}
+
 export default async function ProjectsPage() {
-  let data;
+  let projects;
 
   try {
-    data = await getProjectData();
+    projects = await getProjects();
   } catch (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -37,7 +63,23 @@ export default async function ProjectsPage() {
     );
   }
 
-  const { projects } = data;
+  if (!projects || projects.length === 0) {
+    return (
+      <main className="bg-white">
+        <StickyNav />
+        <div className="min-h-screen">
+          <section className="py-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center space-y-4">
+                <h1 className="text-4xl font-semibold">โครงการในอนาคต</h1>
+                <p className="text-muted-foreground">ยังไม่มีโครงการในขณะนี้</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="bg-white">
@@ -63,14 +105,21 @@ export default async function ProjectsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {projects.map((project, index) => (
               <div
-                key={index}
+                key={project.id || index}
                 data-slot="card"
                 className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl p-8 border-0 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold tracking-tight">
-                    {project.name}
-                  </h3>
+                  <div>
+                    <h3 className="text-xl font-semibold tracking-tight">
+                      {project.name}
+                    </h3>
+                    {project.description && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {project.description}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Progress Bar */}
                   <div className="space-y-2">
@@ -122,17 +171,6 @@ export default async function ProjectsPage() {
         </div>
       </section>
 
-      {/* Navigation */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Link
-            href="/"
-            className="inline-block text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← กลับไปหน้ารายงานการเงิน
-          </Link>
-        </div>
-      </section>
       </div>
     </main>
   );

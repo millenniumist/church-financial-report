@@ -10,6 +10,7 @@ const DEFAULT_NAV_ITEMS = [
   { id: 'worship', name: 'การนมัสการ', href: '/worship' },
   { id: 'missions', name: 'พันธกิจ', href: '/missions' },
   { id: 'ministries', name: 'กิจกรรม', href: '/ministries' },
+  { id: 'projects', name: 'โครงการ', href: '/projects' },
   { id: 'financial', name: 'การเงิน', href: '/financial' },
   { id: 'contact', name: 'ติดต่อเรา', href: '/contact' },
 ];

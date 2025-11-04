@@ -16,37 +16,78 @@ async function fetchAndParseProjects() {
   // Fetch data from Google Sheets
   const rows = await fetchSheetData('FutureProject');
 
-  if (!rows || rows.length < 2) {
-    logger.warn('FutureProject sheet is empty or has no data rows');
+  if (!rows || rows.length === 0) {
+    logger.warn('FutureProject sheet is empty');
     return [];
   }
 
-  const headers = rows[0];
+  // Find the header row (Sheet may include intro text before column names)
+  let headerRowIndex = -1;
+  let headers = null;
+  for (let i = 0; i < rows.length; i++) {
+    const normalized = rows[i]
+      .filter(Boolean)
+      .map((cell) => cell.toString().toLowerCase().trim());
+    if (normalized.includes('name') && normalized.includes('targetamount')) {
+      headerRowIndex = i;
+      headers = rows[i];
+      break;
+    }
+  }
+
+  if (headerRowIndex === -1 || !headers) {
+    logger.error('FutureProject sheet headers not found (missing name/targetAmount columns)');
+    return [];
+  }
+
   const colMap = createColumnMap(headers);
   const projects = [];
 
-  logger.debug({ columnMap: colMap }, 'Column map created for FutureProject sheet');
+  const nameIndex = colMap['name'];
+  if (nameIndex === undefined) {
+    logger.error({ headers }, 'FutureProject sheet missing required "name" column');
+    return [];
+  }
 
-  // Parse rows (skip header)
-  for (let i = 1; i < rows.length; i++) {
+  logger.debug(
+    { columnMap: colMap, headerRowIndex },
+    'Column map created for FutureProject sheet'
+  );
+
+  // Parse rows (skip header and any intro rows)
+  for (let i = headerRowIndex + 1; i < rows.length; i++) {
     const row = rows[i];
-    if (!row[colMap['name']]) {
-      logger.debug({ rowIndex: i }, 'Skipping row with no name');
+    const sheetRow = i + 1;
+    if (!row || !row[nameIndex]) {
+      logger.debug({ rowIndex: sheetRow }, 'Skipping row with no name');
       continue;
     }
 
     const project = {
-      id: row[colMap['id']] || null,
-      name: row[colMap['name']],
-      description: row[colMap['description']] || null,
-      targetAmount: parseNumber(row[colMap['targetamount']], 0),
-      currentAmount: parseNumber(row[colMap['currentamount']], 0),
-      priority: parseNumber(row[colMap['priority']], 0),
-      isActive: parseBoolean(row[colMap['isactive']])
+      id: colMap['id'] !== undefined ? row[colMap['id']] || null : null,
+      name: row[nameIndex],
+      description:
+        colMap['description'] !== undefined ? row[colMap['description']] || null : null,
+      targetAmount: parseNumber(
+        colMap['targetamount'] !== undefined ? row[colMap['targetamount']] : null,
+        0
+      ),
+      currentAmount: parseNumber(
+        colMap['currentamount'] !== undefined ? row[colMap['currentamount']] : null,
+        0
+      ),
+      priority: parseNumber(
+        colMap['priority'] !== undefined ? row[colMap['priority']] : null,
+        0
+      ),
+      isActive:
+        colMap['isactive'] !== undefined
+          ? parseBoolean(row[colMap['isactive']])
+          : true
     };
 
     projects.push(project);
-    logger.debug({ name: project.name }, 'Parsed project from sheet');
+    logger.debug({ name: project.name, rowIndex: sheetRow }, 'Parsed project from sheet');
   }
 
   logger.info({ count: projects.length }, 'Future projects parsed from Google Sheets');
