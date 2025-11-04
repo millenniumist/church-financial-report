@@ -206,8 +206,8 @@ const missionsSeed = [
       en: 'Our church funds full-time missionaries and deploys short-term teams in neighbouring nations. This year we focus on Thai diaspora communities and planting churches in hard-to-reach regions.',
     },
     focusAreas: {
-      th: ['การส่งมิชชันนารี', 'การอธิษฐานทวีประเทศ', 'การสนับสนุนด้านการเงิน'],
-      en: ['Missionary sending', 'Intercession for nations', 'Financial support'],
+      th: ['การส่งมิชชันนารี', 'การอธิษฐานทวีประเทศ', 'การหนุนใจและทรัพยากรเพื่อการรับใช้'],
+      en: ['Missionary sending', 'Intercession for nations', 'Encouragement and resources for ministry'],
     },
     scripture: {
       reference: {
@@ -456,19 +456,19 @@ const pageContentSeed = [
     page: 'landing',
     section: 'promo',
     title: {
-      th: 'สร้างความเชื่อมั่น',
-      en: 'Building trust together',
+      th: 'ข่าวดีเพื่อทุกคน',
+      en: 'Good news for everyone',
     },
     description: {
-      th: 'Full Gospel – พระกิตติคุณเพื่อทุกคน',
-      en: 'Every baht is recorded, audited, and reported with transparency.',
+      th: 'Full Gospel – พระกิตติคุณเพื่อทุกครอบครัว',
+      en: 'Full Gospel – The gospel for every family.',
     },
     body: {
       cta: {
-        href: '/financial',
+        href: '/about',
         label: {
-          th: 'ดูรายงานการเงิน',
-          en: 'View financial reports',
+          th: 'เรียนรู้พระกิตติคุณ',
+          en: 'Discover the gospel',
         },
       },
     },
