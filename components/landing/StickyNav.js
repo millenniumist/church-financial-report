@@ -10,9 +10,15 @@ const DEFAULT_NAV_ITEMS = [
   { id: "worship", name: "การนมัสการ", href: "/worship" },
   { id: "missions", name: "พันธกิจ", href: "/missions" },
   { id: "projects", name: "โครงการ", href: "/projects" },
-  { id: "financial", name: "การเงิน", href: "/financial" },
   { id: "contact", name: "ติดต่อเรา", href: "/contact" },
 ];
+
+const sanitizeNavItems = (items) =>
+  items.filter(
+    (item) =>
+      item.href !== "/financial" &&
+      item.href !== "/"
+  );
 
 export default function StickyNav() {
   const [isVisible, setIsVisible] = useState(false);
@@ -60,13 +66,16 @@ export default function StickyNav() {
         }
         const data = await response.json();
         if (!cancelled && Array.isArray(data.items) && data.items.length) {
-          setNavItems(
-            data.items.map((item) => ({
-              id: item.id,
-              name: item.label ?? item.href,
-              href: item.href,
-            }))
-          );
+          const sanitized = sanitizeNavItems(data.items ?? []);
+          if (sanitized.length) {
+            setNavItems(
+              sanitized.map((item) => ({
+                id: item.id,
+                name: item.label ?? item.href,
+                href: item.href,
+              }))
+            );
+          }
         }
       } catch (error) {
         console.warn("StickyNav fallback to defaults", error);

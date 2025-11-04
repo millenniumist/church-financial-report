@@ -6,12 +6,26 @@ import Link from "next/link";
 import { useScroll, useTransform, motion } from "framer-motion";
 
 const DEFAULT_CONTENT = {
-  title: "สร้างความเชื่อมั่น",
-  headline: "Full Gospel – พระกิตติคุณเพื่อทุกคน",
+  title: "ข่าวดีเพื่อทุกคน",
+  headline: "Full Gospel – พระกิตติคุณเพื่อทุกครอบครัวในชลบุรี",
   cta: {
-    label: "ดูรายงานการเงิน",
-    href: "/financial",
+    label: "เรียนรู้พระกิตติคุณ",
+    href: "/about",
   },
+};
+
+const extractText = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") {
+    return value.th ?? value.en ?? Object.values(value)[0] ?? "";
+  }
+  return String(value);
+};
+
+const containsFinancialKeyword = (value) => {
+  if (typeof value !== "string") return false;
+  return /การเงิน|financial/i.test(value);
 };
 
 export default function LandingPromo() {
@@ -33,12 +47,33 @@ export default function LandingPromo() {
         const data = await res.json();
         const section = data?.sections?.[0];
         if (!cancelled && section) {
+          const remoteTitle = extractText(section.title);
+          const remoteHeadline = extractText(section.description);
+          const remoteCtaLabel = extractText(section.body?.cta?.label);
+          const remoteCtaHref = section.body?.cta?.href;
+
+          const isFinancialSection =
+            remoteCtaHref === "/financial" ||
+            containsFinancialKeyword(remoteHeadline) ||
+            containsFinancialKeyword(remoteTitle) ||
+            containsFinancialKeyword(remoteCtaLabel);
+
           setContent({
-            title: section.title ?? DEFAULT_CONTENT.title,
-            headline: section.description ?? DEFAULT_CONTENT.headline,
+            title: isFinancialSection
+              ? DEFAULT_CONTENT.title
+              : remoteTitle || DEFAULT_CONTENT.title,
+            headline: isFinancialSection
+              ? DEFAULT_CONTENT.headline
+              : remoteHeadline || DEFAULT_CONTENT.headline,
             cta: {
-              label: section.body?.cta?.label ?? DEFAULT_CONTENT.cta.label,
-              href: section.body?.cta?.href ?? DEFAULT_CONTENT.cta.href,
+              label:
+                isFinancialSection || !remoteCtaLabel
+                  ? DEFAULT_CONTENT.cta.label
+                  : remoteCtaLabel,
+              href:
+                isFinancialSection || !remoteCtaHref
+                  ? DEFAULT_CONTENT.cta.href
+                  : remoteCtaHref,
             },
           });
         }
