@@ -1,91 +1,23 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useScroll, useTransform, motion } from "framer-motion";
 
-const DEFAULT_CONTENT = {
-  title: "ข่าวดีเพื่อทุกคน",
-  headline: "Full Gospel – พระกิตติคุณเพื่อทุกครอบครัว",
-  cta: {
-    label: "เรียนรู้พระกิตติคุณ",
-    href: "/about",
-  },
-};
-
-const extractText = (value) => {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "object") {
-    return value.th ?? value.en ?? Object.values(value)[0] ?? "";
-  }
-  return String(value);
-};
-
-const referencesFinance = (value) => {
-  if (typeof value !== "string") return false;
-  return /การเงิน|financial|report/i.test(value);
-};
-
 export default function LandingPromo() {
   const container = useRef();
-  const [content, setContent] = useState(DEFAULT_CONTENT);
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ["start end", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], ["-10vh", "10vh"]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadContent() {
-      try {
-        const res = await fetch("/api/page-content/landing?section=promo");
-        if (!res.ok) return;
-        const data = await res.json();
-        const section = data?.sections?.[0];
-        if (!cancelled && section) {
-          const remoteTitle = extractText(section.title);
-          const remoteHeadline = extractText(section.description);
-          const remoteCtaLabel = extractText(section.body?.cta?.label);
-          const remoteCtaHref = section.body?.cta?.href;
-
-          const shouldFallback =
-            referencesFinance(remoteTitle) ||
-            referencesFinance(remoteHeadline) ||
-            referencesFinance(remoteCtaLabel) ||
-            remoteCtaHref === "/financial";
-
-          setContent({
-            title: shouldFallback || !remoteTitle ? DEFAULT_CONTENT.title : remoteTitle,
-            headline: shouldFallback || !remoteHeadline ? DEFAULT_CONTENT.headline : remoteHeadline,
-            cta: {
-              label:
-                shouldFallback || !remoteCtaLabel ? DEFAULT_CONTENT.cta.label : remoteCtaLabel,
-              href:
-                shouldFallback || !remoteCtaHref ? DEFAULT_CONTENT.cta.href : remoteCtaHref,
-            },
-          });
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setContent(DEFAULT_CONTENT);
-        }
-      }
-    }
-
-    loadContent();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.8, 1, 0.8]);
 
   return (
     <div
       ref={container}
-      className="relative flex items-center justify-center h-screen overflow-hidden"
+      className="relative flex items-center justify-center min-h-screen overflow-hidden py-20"
       style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}
     >
       <div className="fixed top-[-10vh] left-0 h-[120vh] w-full">
@@ -93,29 +25,134 @@ export default function LandingPromo() {
           <Image
             src="/images/image.png"
             fill
-            alt="Worship band leading music on a church stage"
+            alt="Come to Jesus"
             className="object-cover filter grayscale"
           />
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60" />
         </motion.div>
       </div>
 
-      <h3 className="absolute top-12 right-6 text-white uppercase z-10 text-sm md:text-base lg:text-lg font-semibold tracking-wide">
-        {content.title}
-      </h3>
+      <motion.div
+        style={{ opacity }}
+        className="relative z-10 max-w-6xl mx-auto px-6 sm:px-8 lg:px-12"
+      >
+        <div className="text-center space-y-12">
+          {/* Matthew 11:28 - Hero Verse */}
+          <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="space-y-4"
+            >
+              <div className="inline-block">
+                <span className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white/90 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold uppercase tracking-wider border border-white/20">
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                  </svg>
+                  พระคัมภีร์
+                </span>
+              </div>
 
-      <div className="absolute bottom-12 right-6 flex flex-col items-end gap-6 text-right z-10 max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-5xl">
-        <p className="text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl leading-tight font-bold">
-          {content.headline}
-        </p>
-        <Link
-          href={content.cta?.href ?? DEFAULT_CONTENT.cta.href}
-          className="inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg transition hover:bg-primary/90 hover:text-white"
-        >
-          {content.cta?.label ?? DEFAULT_CONTENT.cta.label}
-          <span aria-hidden="true">→</span>
-        </Link>
-      </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight tracking-tight">
+                <span className="text-white/90">บรรดาผู้เหน็ดเหนื่อย</span>
+                <br />
+                <span className="text-white/90">และแบกภาระหนัก</span>
+                <br />
+                
+                <span className="text-white/80">จงมาหาเรา</span>
+                <br />
+                <span className="bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                  และเราจะให้ท่านทั้งหลายได้หยุดพัก"
+                </span>
+              </h2>
+
+              <p className="text-white/80 text-lg sm:text-xl md:text-2xl font-light tracking-wide">
+                มัทธิว 11:28
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Gospel Message */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="space-y-8 max-w-4xl mx-auto"
+          >
+            <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+            <div className="space-y-6 text-white/95">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white">
+                ข่าวประเสริฐแห่งความรอด
+              </h3>
+
+              <div className="space-y-4 text-base sm:text-lg md:text-xl leading-relaxed text-white/90">
+                <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
+                  "เพราะว่าพระเจ้าทรงรักโลกมากจนได้ทรงประทานพระบุตรองค์เดียวของพระองค์
+                  เพื่อทุกคนที่วางใจในพระบุตรนั้นจะไม่พินาศ แต่มีชีวิตนิรันดร"
+                  <span className="block mt-3 text-sm text-white/60">
+                    — ยอห์น 3:16
+                  </span>
+                </p>
+
+                <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
+                  "พระคริสต์ทรงสิ้นพระชนม์เพื่อบาปของเราทั้งหลาย ตามพระคัมภีร์
+                  และพระองค์ทรงถูกฝังไว้ และวันที่สามพระองค์ทรงเป็นขึ้นมา
+                  ตามพระคัมภีร์"
+                  <span className="block mt-3 text-sm text-white/60">
+                    — 1 โครินธ์ 15:3-4
+                  </span>
+                </p>
+
+                <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
+                  "ท่านทั้งหลายรอดโดยพระคุณ ทางความเชื่อ
+                  และความรอดนั้นไม่ได้มาจากตัวท่านเอง แต่เป็นของประทานจากพระเจ้า
+                  ไม่ได้มาจากการกระทำ เพื่อจะไม่มีใครอวดได้"
+                  <span className="block mt-3 text-sm text-white/60">
+                    — เอเฟซัส 2:8-9
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          </motion.div>
+
+          {/* Call to Action */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            <p className="text-white/90 text-xl sm:text-2xl md:text-3xl font-light italic">
+              "เหตุฉะนั้น ถ้าผู้ใดอยู่ในพระคริสต์
+              ผู้นั้นก็เป็นคนที่ถูกสร้างขึ้นใหม่แล้ว
+              <br />
+              สิ่งเก่าๆ ล่วงไปแล้ว ดูเถิด สิ่งใหม่ได้มาถึงแล้ว"
+            </p>
+
+            <p className="text-white/70 text-lg sm:text-xl">2 โครินธ์ 5:17</p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-8 py-4 text-base sm:text-lg font-semibold text-white border-2 border-white/30 transition-all hover:bg-white/20 hover:border-white/50"
+              >
+                ติดต่อเรา
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
   );
 }
