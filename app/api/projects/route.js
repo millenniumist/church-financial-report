@@ -32,7 +32,8 @@ export async function GET(request) {
         ? Math.round((project.currentAmount / project.targetAmount) * 100)
         : 0,
       priority: project.priority,
-      isActive: project.isActive
+      isActive: project.isActive,
+      images: Array.isArray(project.images) ? project.images : []
     }));
 
     const duration = Date.now() - startTime;

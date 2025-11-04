@@ -108,6 +108,9 @@ export async function PUT(request, { params }) {
   if ('heroImageUrl' in body) {
     updates.heroImageUrl = body.heroImageUrl ?? null;
   }
+  if ('images' in body) {
+    updates.images = Array.isArray(body.images) ? body.images : [];
+  }
   if ('startDate' in body) {
     updates.startDate = body.startDate ? new Date(body.startDate) : null;
   }

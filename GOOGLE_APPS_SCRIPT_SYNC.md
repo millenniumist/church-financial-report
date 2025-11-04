@@ -1,6 +1,6 @@
 # Google Apps Script Sync Setup
 
-This guide explains how to set up automatic synchronization from Google Sheets to your database using Google Apps Script. The public site now reads exclusively from the PostgreSQL database; Google Sheets is only used as an optional back-office tool for entering and staging data before it is pushed into the database.
+This guide explains how to set up automatic synchronization from Google Sheets to your database using Google Apps Script. The public site now reads exclusively from the PostgreSQL database; Google Sheets is used solely as an optional back-office tool for entering and staging **financial** data before it is pushed into the database. All other content (missions, projects, navigation, etc.) is managed in the Admin Backoffice.
 
 ## 📋 Overview
 
@@ -68,16 +68,8 @@ const CONFIG = {
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
-  ui.createMenu('🔄 Sync Content')
-      .addItem('📊 Sync Financial Data', 'syncFinancialData')
-      .addSeparator()
-      .addItem('🎯 Sync Missions', 'syncMissions')
-      .addItem('📞 Sync Contact Info', 'syncContactInfo')
-      .addItem('🧭 Sync Navigation', 'syncNavigation')
-      .addItem('📄 Sync Page Content', 'syncPageContent')
-      .addItem('🏗️ Sync Future Projects', 'syncProjects')
-      .addSeparator()
-      .addItem('🔄 Sync All Content', 'syncAllContent')
+  ui.createMenu('📊 Financial Sync')
+      .addItem('📈 Sync Financial Data', 'syncFinancialData')
       .addToUi();
 }
 
@@ -152,98 +144,7 @@ function syncFinancialData() {
  * Sync Missions from Mission sheet
  * Server fetches and parses data from Google Sheets
  */
-function syncMissions() {
-  return callSyncAPI('/api/sync-content/missions', 'Missions');
-}
-
-/**
- * Sync Contact Info from ContactInfo sheet
- * Server fetches and parses data from Google Sheets
- */
-function syncContactInfo() {
-  return callSyncAPI('/api/sync-content/contact', 'Contact Info');
-}
-
-/**
- * Sync Navigation Items from NavigationItem sheet
- * Server fetches and parses data from Google Sheets
- */
-function syncNavigation() {
-  return callSyncAPI('/api/sync-content/navigation', 'Navigation');
-}
-
-/**
- * Sync Page Content from PageContent sheet
- * Server fetches and parses data from Google Sheets
- */
-function syncPageContent() {
-  return callSyncAPI('/api/sync-content/pages', 'Page Content');
-}
-
-/**
- * Sync Future Projects from FutureProject sheet
- * Server fetches and parses data from Google Sheets
- */
-function syncProjects() {
-  return callSyncAPI('/api/sync-content/projects', 'Future Projects');
-}
-
-/**
- * Sync all content types
- */
-function syncAllContent() {
-  Logger.log('🔄 Starting sync for all content types...');
-
-  const results = {
-    financial: null,
-    missions: null,
-    contact: null,
-    navigation: null,
-    pages: null,
-    projects: null
-  };
-
-  try {
-    results.financial = syncFinancialData();
-  } catch (e) {
-    Logger.log(`❌ Financial sync failed: ${e.message}`);
-  }
-
-  try {
-    results.missions = syncMissions();
-  } catch (e) {
-    Logger.log(`❌ Missions sync failed: ${e.message}`);
-  }
-
-  try {
-    results.contact = syncContactInfo();
-  } catch (e) {
-    Logger.log(`❌ Contact sync failed: ${e.message}`);
-  }
-
-  try {
-    results.navigation = syncNavigation();
-  } catch (e) {
-    Logger.log(`❌ Navigation sync failed: ${e.message}`);
-  }
-
-  try {
-    results.pages = syncPageContent();
-  } catch (e) {
-    Logger.log(`❌ Page content sync failed: ${e.message}`);
-  }
-
-  try {
-    results.projects = syncProjects();
-  } catch (e) {
-    Logger.log(`❌ Projects sync failed: ${e.message}`);
-  }
-
-  Logger.log('✅ All sync operations completed');
-  Logger.log(`Results: ${JSON.stringify(results, null, 2)}`);
-
-  return results;
-}
+// All non-financial content is now maintained exclusively via the Admin Backoffice.
 
 ```
 
@@ -264,36 +165,8 @@ Creates/updates categories in `FinancialCategory` table from the **Monthly** she
 - Stores them with their order, visibility settings, and type (income/expense)
 - Categories are used for filtering, aggregation, and display customization
 
-#### 3. Missions (`syncMissions`)
-Creates/updates `Mission` records from the **Mission** sheet:
-- `slug` (unique identifier), `title`, `theme`, `summary`, `description`
-- `focusAreas`, `scripture`, `nextSteps` (multilingual JSON fields)
-- `pinned`, `heroImageUrl`, `startDate`, `endDate`
-
-#### 4. Contact Info (`syncContactInfo`)
-Creates/updates a single `ContactInfo` record (ID=1) from the **ContactInfo** sheet:
-- `name`, `phone`, `email`, `address` (multilingual)
-- `social` (JSON with social media links)
-- `mapEmbedUrl`, `coordinates`, `worshipTimes`
-
-#### 5. Navigation Items (`syncNavigation`)
-Creates/updates `NavigationItem` records from the **NavigationItem** sheet:
-- `href` (used for identification), `label` (multilingual)
-- `order`, `active` (boolean)
-
-#### 6. Page Content (`syncPageContent`)
-Creates/updates `PageContent` records from the **PageContent** sheet:
-- `page` + `section` (composite unique key)
-- `title`, `subtitle`, `description`, `body` (multilingual JSON fields)
-- `metadata` (additional JSON data)
-
-#### 7. Future Projects (`syncProjects`)
-Creates/updates `FutureProject` records from the **FutureProject** sheet:
-- `id` (optional), `name`, `description`
-- `targetAmount`, `currentAmount`, `priority`
-- `isActive` (boolean)
-
-The public APIs read exclusively from the PostgreSQL database, eliminating runtime Google Sheets API calls.
+> ℹ️ **Admin-managed content**  
+> Missions, future projects, contact information, navigation, and reusable page sections now live in the Admin Backoffice. Those sync endpoints have been removed—sheets are no longer the source of truth for that data.
 
 ### Google Sheets Structure
 
@@ -376,8 +249,8 @@ After syncing, you can manage category visibility and aggregation through the ad
 **Option 1: Run from Menu (Recommended)**
 1. Go back to your Google Sheet
 2. Reload the page to trigger `onOpen()`
-3. You should see a new menu: **📊 Financial**
-4. Click **📊 Financial** → **Sync to Database**
+3. You should see a new menu: **📊 Financial Sync**
+4. Click **📊 Financial Sync** → **📈 Sync Financial Data**
 5. Check **Execution log** to see results
 
 **Option 2: Run from Script Editor**
@@ -401,7 +274,7 @@ After syncing, you can manage category visibility and aggregation through the ad
 
 To manually sync data:
 1. Open your Google Sheet
-2. Click **📊 Financial** → **Sync to Database**
+2. Click **📊 Financial Sync** → **📈 Sync Financial Data**
 3. Wait for success notification in logs
 
 ## 🔧 Advanced: Add Sync Button to Sheet

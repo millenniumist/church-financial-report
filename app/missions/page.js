@@ -4,6 +4,7 @@ import MissionCard from '@/components/MissionCard';
 import MissionPagination from '@/components/MissionPagination';
 import { getMissions } from '@/lib/missions';
 import { generateMetadata as genMetadata } from '@/lib/seo';
+import ImageCarousel from '@/components/ImageCarousel';
 
 export const metadata = genMetadata({
   title: 'พันธกิจ',
@@ -62,6 +63,11 @@ export default async function MissionsPage({ searchParams }) {
                   key={mission.id}
                   className="p-8 bg-gradient-to-br from-primary/15 via-white to-white border border-primary/20 shadow-lg"
                 >
+                  {mission.images && mission.images.length > 0 && (
+                    <div className="mb-6 -mx-8 -mt-8">
+                      <ImageCarousel images={mission.images} alt={mission.title} />
+                    </div>
+                  )}
                   <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
                     ไฮไลต์พิเศษ
                   </span>

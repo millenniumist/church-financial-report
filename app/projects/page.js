@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 import StickyNav from '@/components/landing/StickyNav';
 import { prisma } from '@/lib/prisma';
+import ImageCarousel from '@/components/ImageCarousel';
 
 export const metadata = genMetadata({
   title: 'โครงการ',
@@ -41,7 +42,8 @@ async function getProjects() {
       ? Math.round((project.currentAmount / project.targetAmount) * 100)
       : 0,
     priority: project.priority,
-    isActive: project.isActive
+    isActive: project.isActive,
+    images: Array.isArray(project.images) ? project.images : []
   }));
 }
 
@@ -109,6 +111,10 @@ export default async function ProjectsPage() {
                 data-slot="card"
                 className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl p-8 border-0 shadow-sm hover:shadow-md transition-shadow"
               >
+                {project.images && project.images.length > 0 && (
+                  <ImageCarousel images={project.images} alt={project.name} />
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-xl font-semibold tracking-tight">

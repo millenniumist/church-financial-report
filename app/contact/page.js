@@ -226,7 +226,7 @@ export default async function ContactPage() {
           </div>
           <h2 className="text-3xl font-bold mb-4">คำขออธิษฐาน</h2>
           <p className="text-muted-foreground text-lg mb-6">หากคุณต้องการให้คริสตจักรอธิษฐานเผื่อคุณ กรุณาติดต่อผู้นำคริสตจักรหรือแจ้งในวันนมัสการ</p>
-          <p className="text-sm text-muted-foreground italic">"คำอธิษฐานของคนชอบธรรมมีพลังมาก" - ยากอบ 5:16</p>
+          <p className="text-sm text-muted-foreground italic">&ldquo;คำอธิษฐานของคนชอบธรรมมีพลังมาก&rdquo; - ยากอบ 5:16</p>
         </div>
       </section>
 

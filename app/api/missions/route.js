@@ -106,6 +106,7 @@ export async function POST(request) {
         nextSteps: ensureLocalizedList(body.nextSteps, locale),
         pinned: Boolean(body.pinned),
         heroImageUrl: body.heroImageUrl ?? null,
+        images: Array.isArray(body.images) ? body.images : [],
         startDate: body.startDate ? new Date(body.startDate) : null,
         endDate: body.endDate ? new Date(body.endDate) : null,
       },

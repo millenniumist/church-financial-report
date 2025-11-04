@@ -36,6 +36,7 @@ model FutureProject {
   currentAmount Float   @default(0)
   priority    Int      @default(0)
   isActive    Boolean  @default(true)
+  images      String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -54,6 +55,7 @@ model Mission {
   nextSteps    Json
   pinned       Boolean  @default(false)
   heroImageUrl String?
+  images       String[] @default([])
   startDate    DateTime?
   endDate      DateTime?
   createdAt    DateTime @default(now())
