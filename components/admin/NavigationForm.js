@@ -8,6 +8,8 @@ export default function NavigationForm({ item = null }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isEdit = Boolean(item);
+
   const [formData, setFormData] = useState({
     labelTh: item?.label?.th ?? '',
     labelEn: item?.label?.en ?? '',
@@ -33,15 +35,20 @@ export default function NavigationForm({ item = null }) {
       const url = item ? `/api/admin/navigation/${item.id}` : '/api/admin/navigation';
       const method = item ? 'PATCH' : 'POST';
 
+      const payload = {
+        label: { th: formData.labelTh, en: formData.labelEn },
+        order: Number(formData.order) || 0,
+        active: formData.active,
+      };
+
+      if (!isEdit) {
+        payload.href = formData.href;
+      }
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          label: { th: formData.labelTh, en: formData.labelEn },
-          href: formData.href,
-          order: Number(formData.order) || 0,
-          active: formData.active,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -99,23 +106,37 @@ export default function NavigationForm({ item = null }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Link (href) *
-            </label>
-            <input
-              type="text"
-              name="href"
-              value={formData.href}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="/missions"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Use relative paths starting with <code>/</code>.
-            </p>
-          </div>
+          {isEdit ? (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Link (href)
+              </label>
+              <div className="px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-sm text-slate-600">
+                <code>{formData.href}</code>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Path is set when the link is created and cannot be changed here.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Link (href) *
+              </label>
+              <input
+                type="text"
+                name="href"
+                value={formData.href}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="/missions"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Use relative paths starting with <code>/</code>.
+              </p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Order

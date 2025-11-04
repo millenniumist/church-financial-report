@@ -54,7 +54,6 @@ export async function PATCH(request, { params }) {
     const item = await prisma.navigationItem.update({
       where: { id },
       data: {
-        href: body.href ?? undefined,
         order:
           body.order !== undefined && Number.isFinite(Number(body.order))
             ? Number(body.order)
