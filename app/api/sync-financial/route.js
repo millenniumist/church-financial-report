@@ -1,42 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { google } from 'googleapis';
-import fs from 'fs';
 import { logger } from '@/lib/logger';
+import { fetchSheetData } from '@/lib/google-sheets';
 
-async function getAuthClient() {
-  let credentials;
-
-  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-    credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-  } else if (process.env.GOOGLE_SERVICE_ACCOUNT_PATH) {
-    credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_SERVICE_ACCOUNT_PATH, 'utf8'));
-  } else {
-    throw new Error('Missing Google Service Account credentials');
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  });
-
-  return await auth.getClient();
-}
-
-async function fetchSheetsData(range = 'Monthly!AF:AZ') {
-  const authClient = await getAuthClient();
-  const sheets = google.sheets({ version: 'v4', auth: authClient });
-
-  // Fetch with a wider range to handle multiple years
-  // AF = categories, AG onwards = monthly data
-  // Default to AF:AZ (20 columns = ~19 months of data)
-  // You can expand this as needed (AF:BZ for more years)
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
-    range,
-  });
-
-  return response.data.values;
+async function fetchSheetsData(range = 'AF:AZ') {
+  return await fetchSheetData('Monthly', range);
 }
 
 function getMonthBounds(year, monthIndex) {

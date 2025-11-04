@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { fetchSheetData, parseJSON, parseBoolean, createColumnMap } from '@/lib/google-sheets';
 
 // Verify API key for security
 function verifyAuth(request) {
@@ -20,6 +21,52 @@ function verifyAuth(request) {
   return false;
 }
 
+async function fetchAndParseMissions() {
+  // Fetch data from Google Sheets
+  const rows = await fetchSheetData('Mission');
+
+  if (!rows || rows.length < 2) {
+    logger.warn('Mission sheet is empty or has no data rows');
+    return [];
+  }
+
+  const headers = rows[0];
+  const colMap = createColumnMap(headers);
+  const missions = [];
+
+  logger.debug({ columnMap: colMap }, 'Column map created for Mission sheet');
+
+  // Parse rows (skip header)
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row[colMap['slug']]) {
+      logger.debug({ rowIndex: i }, 'Skipping row with no slug');
+      continue;
+    }
+
+    const mission = {
+      slug: row[colMap['slug']],
+      title: parseJSON(row[colMap['title']]) || { th: '', en: '' },
+      theme: parseJSON(row[colMap['theme']]) || { th: '', en: '' },
+      summary: parseJSON(row[colMap['summary']]) || { th: '', en: '' },
+      description: parseJSON(row[colMap['description']]) || { th: '', en: '' },
+      focusAreas: parseJSON(row[colMap['focusareas']]) || { th: [], en: [] },
+      scripture: parseJSON(row[colMap['scripture']]) || null,
+      nextSteps: parseJSON(row[colMap['nextsteps']]) || { th: [], en: [] },
+      pinned: parseBoolean(row[colMap['pinned']]),
+      heroImageUrl: row[colMap['heroimageurl']] || null,
+      startDate: row[colMap['startdate']] ? new Date(row[colMap['startdate']]).toISOString() : null,
+      endDate: row[colMap['enddate']] ? new Date(row[colMap['enddate']]).toISOString() : null
+    };
+
+    missions.push(mission);
+    logger.debug({ slug: mission.slug }, 'Parsed mission from sheet');
+  }
+
+  logger.info({ count: missions.length }, 'Missions parsed from Google Sheets');
+  return missions;
+}
+
 export async function POST(request) {
   const startTime = Date.now();
   const requestId = `sync_missions_${Date.now()}`;
@@ -32,12 +79,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized - Invalid API key' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { missions } = body;
-
-    if (!Array.isArray(missions)) {
-      return NextResponse.json({ error: 'missions array is required' }, { status: 400 });
-    }
+    // Fetch and parse missions from Google Sheets
+    const missions = await fetchAndParseMissions();
 
     let created = 0;
     let updated = 0;

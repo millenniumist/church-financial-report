@@ -4,7 +4,7 @@ This guide explains how to set up automatic synchronization from Google Sheets t
 
 ## 📋 Overview
 
-Instead of using a server-side cron job, this application uses Google Apps Script triggers to sync financial data from your Google Sheet to your PostgreSQL database on a schedule.
+Instead of using a server-side cron job, this application uses Google Apps Script triggers to sync data from your Google Sheet to your PostgreSQL database on a schedule.
 
 **Benefits of this approach:**
 - ✅ Website and APIs always read from PostgreSQL (no runtime Google API calls)
@@ -12,6 +12,15 @@ Instead of using a server-side cron job, this application uses Google Apps Scrip
 - ✅ Sync can run automatically on Google's infrastructure or on demand
 - ✅ Easy to monitor and debug from Google Apps Script console
 - ✅ Avoids maintaining a separate cron container
+- ✅ **All data parsing happens server-side** for consistency and maintainability
+- ✅ **Simple Apps Script** - just triggers endpoints, no business logic
+
+**Architecture:**
+1. Google Apps Script triggers sync endpoints (simple HTTP POST calls)
+2. Next.js server fetches data directly from Google Sheets API
+3. Server parses and validates all data
+4. Server updates PostgreSQL database
+5. Public APIs read from PostgreSQL only
 
 ## 🚀 Setup Instructions
 
@@ -74,10 +83,10 @@ function onOpen() {
 
 /**
  * Generic sync function to call any endpoint
+ * Note: All data parsing is now done server-side for consistency and maintainability
  */
-function callSyncAPI(endpoint, payload, syncName) {
+function callSyncAPI(endpoint, syncName) {
   const startTime = new Date();
-  let result = {};
 
   try {
     Logger.log(`🔄 Starting ${syncName} sync...`);
@@ -88,7 +97,7 @@ function callSyncAPI(endpoint, payload, syncName) {
         'x-api-key': CONFIG.API_KEY,
         'Content-Type': 'application/json'
       },
-      payload: JSON.stringify(payload),
+      payload: JSON.stringify({}),
       muteHttpExceptions: true
     };
 
@@ -99,6 +108,7 @@ function callSyncAPI(endpoint, payload, syncName) {
 
     Logger.log(`Raw API Response (${statusCode}): ${responseText}`);
 
+    let result = {};
     try {
       result = JSON.parse(responseText);
     } catch (e) {
@@ -132,201 +142,50 @@ function callSyncAPI(endpoint, payload, syncName) {
 
 /**
  * Sync Financial Data from Monthly sheet
+ * Server fetches and parses data from Google Sheets
  */
 function syncFinancialData() {
-  return callSyncAPI('/api/sync-financial', {}, 'Financial Data');
+  return callSyncAPI('/api/sync-financial', 'Financial Data');
 }
 
 /**
  * Sync Missions from Mission sheet
+ * Server fetches and parses data from Google Sheets
  */
 function syncMissions() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Mission');
-  if (!sheet) {
-    throw new Error('Mission sheet not found');
-  }
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const missions = [];
-
-  // Find column indices
-  const colMap = {};
-  headers.forEach((header, i) => {
-    colMap[header.toString().toLowerCase()] = i;
-  });
-
-  // Parse rows (skip header)
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (!row[colMap['slug']]) continue; // Skip if no slug
-
-    const mission = {
-      slug: row[colMap['slug']],
-      title: parseJSON(row[colMap['title']]) || { th: '', en: '' },
-      theme: parseJSON(row[colMap['theme']]) || { th: '', en: '' },
-      summary: parseJSON(row[colMap['summary']]) || { th: '', en: '' },
-      description: parseJSON(row[colMap['description']]) || { th: '', en: '' },
-      focusAreas: parseJSON(row[colMap['focusareas']]) || { th: [], en: [] },
-      scripture: parseJSON(row[colMap['scripture']]) || null,
-      nextSteps: parseJSON(row[colMap['nextsteps']]) || { th: [], en: [] },
-      pinned: row[colMap['pinned']] === true || row[colMap['pinned']] === 'TRUE',
-      heroImageUrl: row[colMap['heroimageurl']] || null,
-      startDate: row[colMap['startdate']] ? new Date(row[colMap['startdate']]).toISOString() : null,
-      endDate: row[colMap['enddate']] ? new Date(row[colMap['enddate']]).toISOString() : null
-    };
-
-    missions.push(mission);
-  }
-
-  return callSyncAPI('/api/sync-content/missions', { missions }, 'Missions');
+  return callSyncAPI('/api/sync-content/missions', 'Missions');
 }
 
 /**
  * Sync Contact Info from ContactInfo sheet
+ * Server fetches and parses data from Google Sheets
  */
 function syncContactInfo() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ContactInfo');
-  if (!sheet) {
-    throw new Error('ContactInfo sheet not found');
-  }
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-
-  if (data.length < 2) {
-    throw new Error('ContactInfo sheet has no data');
-  }
-
-  const row = data[1]; // Single row table
-  const colMap = {};
-  headers.forEach((header, i) => {
-    colMap[header.toString().toLowerCase()] = i;
-  });
-
-  const contact = {
-    name: parseJSON(row[colMap['name']]) || { th: '', en: '' },
-    phone: row[colMap['phone']] || '',
-    email: row[colMap['email']] || '',
-    address: parseJSON(row[colMap['address']]) || { th: '', en: '' },
-    social: parseJSON(row[colMap['social']]) || {},
-    mapEmbedUrl: row[colMap['mapembedurl']] || null,
-    coordinates: parseJSON(row[colMap['coordinates']]) || {},
-    worshipTimes: parseJSON(row[colMap['worshiptimes']]) || []
-  };
-
-  return callSyncAPI('/api/sync-content/contact', { contact }, 'Contact Info');
+  return callSyncAPI('/api/sync-content/contact', 'Contact Info');
 }
 
 /**
  * Sync Navigation Items from NavigationItem sheet
+ * Server fetches and parses data from Google Sheets
  */
 function syncNavigation() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('NavigationItem');
-  if (!sheet) {
-    throw new Error('NavigationItem sheet not found');
-  }
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const navigationItems = [];
-
-  const colMap = {};
-  headers.forEach((header, i) => {
-    colMap[header.toString().toLowerCase()] = i;
-  });
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (!row[colMap['href']]) continue;
-
-    const item = {
-      href: row[colMap['href']],
-      label: parseJSON(row[colMap['label']]) || { th: '', en: '' },
-      order: Number(row[colMap['order']]) || 0,
-      active: row[colMap['active']] === true || row[colMap['active']] === 'TRUE'
-    };
-
-    navigationItems.push(item);
-  }
-
-  return callSyncAPI('/api/sync-content/navigation', { navigationItems }, 'Navigation');
+  return callSyncAPI('/api/sync-content/navigation', 'Navigation');
 }
 
 /**
  * Sync Page Content from PageContent sheet
+ * Server fetches and parses data from Google Sheets
  */
 function syncPageContent() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PageContent');
-  if (!sheet) {
-    throw new Error('PageContent sheet not found');
-  }
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const pageContents = [];
-
-  const colMap = {};
-  headers.forEach((header, i) => {
-    colMap[header.toString().toLowerCase()] = i;
-  });
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (!row[colMap['page']] || !row[colMap['section']]) continue;
-
-    const content = {
-      page: row[colMap['page']],
-      section: row[colMap['section']],
-      title: parseJSON(row[colMap['title']]) || null,
-      subtitle: parseJSON(row[colMap['subtitle']]) || null,
-      description: parseJSON(row[colMap['description']]) || null,
-      body: parseJSON(row[colMap['body']]) || null,
-      metadata: parseJSON(row[colMap['metadata']]) || null
-    };
-
-    pageContents.push(content);
-  }
-
-  return callSyncAPI('/api/sync-content/pages', { pageContents }, 'Page Content');
+  return callSyncAPI('/api/sync-content/pages', 'Page Content');
 }
 
 /**
  * Sync Future Projects from FutureProject sheet
+ * Server fetches and parses data from Google Sheets
  */
 function syncProjects() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('FutureProject');
-  if (!sheet) {
-    throw new Error('FutureProject sheet not found');
-  }
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const projects = [];
-
-  const colMap = {};
-  headers.forEach((header, i) => {
-    colMap[header.toString().toLowerCase()] = i;
-  });
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (!row[colMap['name']]) continue;
-
-    const project = {
-      id: row[colMap['id']] || null,
-      name: row[colMap['name']],
-      description: row[colMap['description']] || null,
-      targetAmount: Number(row[colMap['targetamount']]) || 0,
-      currentAmount: Number(row[colMap['currentamount']]) || 0,
-      priority: Number(row[colMap['priority']]) || 0,
-      isActive: row[colMap['isactive']] === true || row[colMap['isactive']] === 'TRUE'
-    };
-
-    projects.push(project);
-  }
-
-  return callSyncAPI('/api/sync-content/projects', { projects }, 'Future Projects');
+  return callSyncAPI('/api/sync-content/projects', 'Future Projects');
 }
 
 /**
@@ -384,20 +243,6 @@ function syncAllContent() {
   Logger.log(`Results: ${JSON.stringify(results, null, 2)}`);
 
   return results;
-}
-
-/**
- * Helper function to parse JSON strings
- */
-function parseJSON(value) {
-  if (!value) return null;
-  if (typeof value === 'object') return value;
-
-  try {
-    return JSON.parse(value);
-  } catch (e) {
-    return null;
-  }
 }
 
 ```

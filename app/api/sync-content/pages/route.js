@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { fetchSheetData, parseJSON, createColumnMap } from '@/lib/google-sheets';
 
 function verifyAuth(request) {
   const apiKey = request.headers.get('x-api-key');
@@ -9,6 +10,47 @@ function verifyAuth(request) {
 
   if (!expectedKey) return true;
   return apiKey === expectedKey || authHeader === `Bearer ${expectedKey}`;
+}
+
+async function fetchAndParsePageContent() {
+  // Fetch data from Google Sheets
+  const rows = await fetchSheetData('PageContent');
+
+  if (!rows || rows.length < 2) {
+    logger.warn('PageContent sheet is empty or has no data rows');
+    return [];
+  }
+
+  const headers = rows[0];
+  const colMap = createColumnMap(headers);
+  const pageContents = [];
+
+  logger.debug({ columnMap: colMap }, 'Column map created for PageContent sheet');
+
+  // Parse rows (skip header)
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row[colMap['page']] || !row[colMap['section']]) {
+      logger.debug({ rowIndex: i }, 'Skipping row with no page or section');
+      continue;
+    }
+
+    const content = {
+      page: row[colMap['page']],
+      section: row[colMap['section']],
+      title: parseJSON(row[colMap['title']]) || null,
+      subtitle: parseJSON(row[colMap['subtitle']]) || null,
+      description: parseJSON(row[colMap['description']]) || null,
+      body: parseJSON(row[colMap['body']]) || null,
+      metadata: parseJSON(row[colMap['metadata']]) || null
+    };
+
+    pageContents.push(content);
+    logger.debug({ page: content.page, section: content.section }, 'Parsed page content from sheet');
+  }
+
+  logger.info({ count: pageContents.length }, 'Page contents parsed from Google Sheets');
+  return pageContents;
 }
 
 export async function POST(request) {
@@ -22,12 +64,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { pageContents } = body;
-
-    if (!Array.isArray(pageContents)) {
-      return NextResponse.json({ error: 'pageContents array is required' }, { status: 400 });
-    }
+    // Fetch and parse page contents from Google Sheets
+    const pageContents = await fetchAndParsePageContent();
 
     let created = 0;
     let updated = 0;
