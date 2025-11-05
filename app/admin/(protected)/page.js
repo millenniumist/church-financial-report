@@ -6,31 +6,19 @@ async function getStats() {
     missionsCount,
     projectsCount,
     activeMissions,
-    activeProjects,
-    navigationCount,
-    visibleNavigationCount,
-    pageContentCount,
-    contactRecord
+    activeProjects
   ] = await Promise.all([
     prisma.mission.count(),
     prisma.futureProject.count(),
     prisma.mission.count({ where: { pinned: true } }),
-    prisma.futureProject.count({ where: { isActive: true } }),
-    prisma.navigationItem.count(),
-    prisma.navigationItem.count({ where: { active: true } }),
-    prisma.pageContent.count(),
-    prisma.contactInfo.findFirst()
+    prisma.futureProject.count({ where: { isActive: true } })
   ]);
 
   return {
     missionsCount,
     projectsCount,
     activeMissions,
-    activeProjects,
-    navigationCount,
-    visibleNavigationCount,
-    pageContentCount,
-    contactConfigured: Boolean(contactRecord)
+    activeProjects
   };
 }
 
@@ -51,27 +39,6 @@ export default async function AdminDashboard() {
       description: `${stats.activeProjects} active`,
       link: '/admin/projects',
       icon: '📊'
-    },
-    {
-      title: 'Navigation',
-      count: stats.navigationCount,
-      description: `${stats.visibleNavigationCount} visible`,
-      link: '/admin/navigation',
-      icon: '🧭'
-    },
-    {
-      title: 'Page Sections',
-      count: stats.pageContentCount,
-      description: 'Reusable page content',
-      link: '/admin/page-content',
-      icon: '📄'
-    },
-    {
-      title: 'Contact Info',
-      count: stats.contactConfigured ? 1 : 0,
-      description: stats.contactConfigured ? 'Configured' : 'Needs setup',
-      link: '/admin/contact',
-      icon: '📞'
     }
   ];
 
@@ -103,7 +70,7 @@ export default async function AdminDashboard() {
 
       <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
             href="/admin/missions/new"
             className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-center font-medium"
@@ -115,12 +82,6 @@ export default async function AdminDashboard() {
             className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-center font-medium"
           >
             + New Project
-          </Link>
-          <Link
-            href="/admin/page-content/new"
-            className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-center font-medium"
-          >
-            + New Page Section
           </Link>
         </div>
       </div>

@@ -1,8 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
+const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 
-const missionsSeed = [
+const fallbackMissionsSeed = [
   {
     slug: 'community-outreach',
     title: {
@@ -281,22 +283,137 @@ const missionsSeed = [
   },
 ];
 
-const contactInfoSeed = {
+function loadSiteDataSnapshot() {
+  try {
+    const siteDataPath = path.resolve(__dirname, '../content/site-data.json');
+    const raw = fs.readFileSync(siteDataPath, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn('[seed] Unable to load site-data.json snapshot:', error.message);
+    return null;
+  }
+}
+
+function normalizeSchedule(schedule = '') {
+  return schedule.replace(/\s+/g, ' ').trim();
+}
+
+function slugifyTitle(title, index) {
+  if (!title) {
+    return `mission-${index + 1}`;
+  }
+  const ascii = title
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return ascii || `mission-${index + 1}`;
+}
+
+function buildMissionsSeedFromSite(siteData) {
+  if (!siteData || !Array.isArray(siteData.upcomingEvents) || siteData.upcomingEvents.length === 0) {
+    return null;
+  }
+
+  return siteData.upcomingEvents.map((event, index) => {
+    const title = event?.title?.trim() || `กิจกรรมพิเศษ ${index + 1}`;
+    const schedule = normalizeSchedule(event?.schedule ?? '');
+    const date = normalizeSchedule(event?.date ?? '');
+    const headline = [date, schedule].filter(Boolean).join(' • ') || title;
+    const description =
+      schedule || date
+        ? `กำหนดการ: ${headline}`
+        : `กิจกรรม "${title}" จากปฏิทินกิจกรรมของคริสตจักรชลบุรี`;
+
+    return {
+      slug: slugifyTitle(title, index),
+      title: {
+        th: title,
+        en: title,
+      },
+      theme: {
+        th: 'กิจกรรมคริสตจักร',
+        en: 'Church activity',
+      },
+      summary: {
+        th: headline,
+        en: headline,
+      },
+      description: {
+        th: description,
+        en: description,
+      },
+      focusAreas: {
+        th: ['การนมัสการ', 'การสามัคคีธรรม', 'การอธิษฐาน'],
+        en: ['Worship', 'Fellowship', 'Prayer'],
+      },
+      scripture: null,
+      nextSteps: {
+        th: [
+          `ร่วมอธิษฐานสำหรับ "${title}"`,
+          'ชวนครอบครัวและเพื่อนมาร่วมกิจกรรม',
+          'ติดต่อผู้นำคริสตจักรเพื่อร่วมรับใช้',
+        ],
+        en: [
+          `Pray for "${title}"`,
+          'Invite friends and family to join',
+          'Contact church leaders to serve together',
+        ],
+      },
+      pinned: index < 2,
+      heroImageUrl: null,
+      images: [],
+      startDate: null,
+      endDate: null,
+    };
+  });
+}
+
+function buildProjectsSeedFromSite(siteData) {
+  if (!siteData || !Array.isArray(siteData.news) || siteData.news.length === 0) {
+    return [];
+  }
+
+  return siteData.news.map((item, index) => {
+    const name = item?.title?.trim() || `ข่าวคริสตจักร ${index + 1}`;
+    const description = (item?.description || item?.meta || '').trim();
+    const targetAmount = 100000 + index * 25000;
+    const currentAmount = Math.round(targetAmount * 0.45);
+
+    return {
+      name,
+      description,
+      targetAmount,
+      currentAmount,
+      priority: siteData.news.length - index,
+      isActive: true,
+      images: item?.image ? [item.image] : [],
+    };
+  });
+}
+
+const siteDataSnapshot = loadSiteDataSnapshot();
+const missionsSeed = buildMissionsSeedFromSite(siteDataSnapshot) ?? fallbackMissionsSeed;
+const projectsSeed = buildProjectsSeedFromSite(siteDataSnapshot);
+
+const fallbackContactInfoSeed = {
   id: 1,
   name: {
-    th: 'คริสตจักรชลบุรี',
-    en: 'Chonburi Church',
+    th: 'คริสตจักรชลบุรี ภาค 7',
+    en: 'Chonburi Church, Region 7',
   },
-  phone: '033-126-404, 080-566-4871',
+  phone: '033-126404, 080-5664871',
   email: 'chounburichurch.info@gmail.com',
   address: {
-    th: '528/10 ถนนราษฎร์ประสงค์ ตำบลมะขามหย่ง อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000',
+    th: '528/10 ถนนราษฎร์ประสงค์ ตำบลมะขามหย่ง อำเภอเมือง จังหวัดชลบุรี 20000',
     en: '528/10 Ratsadornprasong Road, Makham Yong, Mueang Chonburi, Chonburi 20000',
   },
   social: {
     facebook: 'https://www.facebook.com/ChonburiChurch',
     facebookLive: 'https://www.facebook.com/ChonburiChurch/live/',
-    youtube: 'https://www.youtube.com/c/ChonburiChurch',
+    youtube: 'https://www.youtube.com/@ChonburiChurch',
   },
   mapEmbedUrl:
     'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.23072979261!2d100.9818814148232!3d13.36440269057635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3102b407a51c4f5f%3A0x67c51ce81a95e01!2z4LiE4Lij4Li04LmA4LiX4Lio4Lih4Li14Lii4Li14Liq4Li44Lih4Li54LilIOC4geC4suC4o-C4sOC4iuC4suC4peC4seC4lyA3!5e0!3m2!1sen!2sth!4v1730322384196!5m2!1sen!2sth',
@@ -327,8 +444,74 @@ const contactInfoSeed = {
         en: 'Worship Gathering & Sermon',
       },
     },
+    {
+      day: {
+        th: 'วันพุธ',
+        en: 'Wednesday',
+      },
+      time: '08:00',
+      event: {
+        th: 'เยี่ยมเยียนสมาชิก',
+        en: 'Member Visitation',
+      },
+    },
+    {
+      day: {
+        th: 'วันพฤหัสบดี',
+        en: 'Thursday',
+      },
+      time: '19:00',
+      event: {
+        th: 'นมัสการตามบ้าน',
+        en: 'Home Worship',
+      },
+    },
+    {
+      day: {
+        th: 'วันศุกร์',
+        en: 'Friday',
+      },
+      time: '19:00',
+      event: {
+        th: 'ประชุมอธิษฐาน',
+        en: 'Prayer Meeting',
+      },
+    },
   ],
 };
+
+function buildContactInfoSeed(siteData) {
+  if (!siteData || !siteData.contact) {
+    return null;
+  }
+
+  const { contact } = siteData;
+  const addressLines = Array.isArray(contact.address) ? contact.address : [];
+  const thaiAddress = addressLines
+    .filter((line) => !/โทร/.test(line))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const phoneLine = contact.phone
+    ? contact.phone
+    : addressLines.find((line) => /โทร/.test(line));
+
+  const phone = phoneLine
+    ? phoneLine.replace(/.*โทร[.:]?\s*/i, '').replace(/\s+/g, ' ').replace(/^,/, '').trim()
+    : null;
+
+  return {
+    ...fallbackContactInfoSeed,
+    phone: phone || fallbackContactInfoSeed.phone,
+    address: {
+      ...fallbackContactInfoSeed.address,
+      th: thaiAddress || fallbackContactInfoSeed.address.th,
+    },
+  };
+}
+
+const contactInfoSeed = buildContactInfoSeed(siteDataSnapshot) ?? fallbackContactInfoSeed;
 
 const navigationSeed = [
   {
@@ -532,6 +715,17 @@ const financialRecordsSeed = [
   },
 ];
 
+async function seedProjects() {
+  await prisma.futureProject.deleteMany();
+  if (!projectsSeed.length) {
+    return;
+  }
+
+  for (const project of projectsSeed) {
+    await prisma.futureProject.create({ data: project });
+  }
+}
+
 async function seedMissions() {
   await prisma.mission.deleteMany();
   for (const mission of missionsSeed) {
@@ -578,6 +772,7 @@ async function seedFinancialRecords() {
 }
 
 async function main() {
+  await seedProjects();
   await seedMissions();
   await seedContactInfo();
   await seedNavigation();

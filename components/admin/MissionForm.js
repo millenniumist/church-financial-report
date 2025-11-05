@@ -20,7 +20,8 @@ export default function MissionForm({ mission = null }) {
     description: typeof mission?.description === 'string' ? mission.description : (mission?.description?.th || ''),
     descriptionEn: typeof mission?.description === 'object' ? (mission?.description?.en || '') : '',
     focusAreas: Array.isArray(mission?.focusAreas) ? mission.focusAreas.join('\n') : '',
-    scripture: mission?.scripture || '',
+    scriptureText: typeof mission?.scripture === 'object' ? (mission?.scripture?.text || '') : '',
+    scriptureReference: typeof mission?.scripture === 'object' ? (mission?.scripture?.reference || '') : '',
     nextSteps: typeof mission?.nextSteps === 'string' ? mission.nextSteps : (mission?.nextSteps?.th || ''),
     nextStepsEn: typeof mission?.nextSteps === 'object' ? (mission?.nextSteps?.en || '') : '',
     pinned: mission?.pinned || false,
@@ -44,7 +45,9 @@ export default function MissionForm({ mission = null }) {
         summary: { th: formData.summary, en: formData.summaryEn },
         description: { th: formData.description, en: formData.descriptionEn },
         focusAreas: formData.focusAreas.split('\n').filter(line => line.trim()),
-        scripture: formData.scripture || null,
+        scripture: (formData.scriptureText || formData.scriptureReference)
+          ? { text: formData.scriptureText, reference: formData.scriptureReference }
+          : null,
         nextSteps: { th: formData.nextSteps, en: formData.nextStepsEn },
         pinned: formData.pinned,
         heroImageUrl: formData.heroImageUrl || null,
@@ -261,19 +264,38 @@ export default function MissionForm({ mission = null }) {
           />
         </div>
 
-        <div>
-          <label htmlFor="scripture" className="block text-sm font-medium text-slate-700 mb-2">
-            Scripture Reference
-          </label>
-          <input
-            id="scripture"
-            name="scripture"
-            type="text"
-            value={formData.scripture}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="e.g., Matthew 28:19-20"
-          />
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-slate-900">Scripture (Optional)</h4>
+
+          <div>
+            <label htmlFor="scriptureText" className="block text-sm font-medium text-slate-700 mb-2">
+              Scripture Text
+            </label>
+            <textarea
+              id="scriptureText"
+              name="scriptureText"
+              value={formData.scriptureText}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder='e.g., "For God so loved the world..."'
+            />
+          </div>
+
+          <div>
+            <label htmlFor="scriptureReference" className="block text-sm font-medium text-slate-700 mb-2">
+              Scripture Reference
+            </label>
+            <input
+              id="scriptureReference"
+              name="scriptureReference"
+              type="text"
+              value={formData.scriptureReference}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Matthew 28:19-20"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
