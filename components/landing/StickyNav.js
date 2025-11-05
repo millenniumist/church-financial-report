@@ -145,7 +145,7 @@ export default function StickyNav() {
             <div
               id="sticky-mobile-nav"
               className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${
-                menuOpen ? 'max-h-60 opacity-100 pb-3' : 'max-h-0 opacity-0'
+                menuOpen ? 'max-h-96 opacity-100 pb-3' : 'max-h-0 opacity-0'
               }`}
             >
               <div className="mt-2 grid gap-2 rounded-xl border border-white/15 bg-white/5 p-3">

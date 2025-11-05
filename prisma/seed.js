@@ -548,10 +548,10 @@ const navigationSeed = [
   },
   {
     label: {
-      th: 'กิจกรรม',
-      en: 'Ministries',
+      th: 'โครงการ',
+      en: 'Projects',
     },
-    href: '/ministries',
+    href: '/projects',
     order: 5,
   },
   {
