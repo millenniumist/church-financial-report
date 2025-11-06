@@ -91,9 +91,6 @@ export default async function MissionsPage({ searchParams }) {
                       ))}
                     </ul>
                   </div>
-                  <p className="text-xs text-slate-500 mt-6">
-                    อัปเดตล่าสุด: {new Date(mission.updatedAt).toLocaleDateString('th-TH')}
-                  </p>
                 </Card>
               ))}
             </div>

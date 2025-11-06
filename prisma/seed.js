@@ -4,6 +4,29 @@ const path = require('path');
 
 const prisma = new PrismaClient();
 
+/**
+ * Load database snapshot
+ * This is the primary data source for seeding
+ */
+function loadSnapshot() {
+  const snapshotPath = path.join(__dirname, 'snapshot.json');
+
+  if (fs.existsSync(snapshotPath)) {
+    try {
+      const content = fs.readFileSync(snapshotPath, 'utf-8');
+      const snapshot = JSON.parse(content);
+      console.log('✅ Using database snapshot from', snapshot.metadata.timestamp);
+      return snapshot.data;
+    } catch (error) {
+      console.warn('⚠️  Failed to load snapshot, using fallback data:', error.message);
+      return null;
+    }
+  }
+
+  console.warn('⚠️  No snapshot found, using fallback data');
+  return null;
+}
+
 const fallbackMissionsSeed = [
   {
     slug: 'community-outreach',
@@ -394,9 +417,20 @@ function buildProjectsSeedFromSite(siteData) {
   });
 }
 
+// Load snapshot data (primary source)
+const snapshotData = loadSnapshot();
+
+// Load site data snapshot (secondary source)
 const siteDataSnapshot = loadSiteDataSnapshot();
-const missionsSeed = buildMissionsSeedFromSite(siteDataSnapshot) ?? fallbackMissionsSeed;
-const projectsSeed = buildProjectsSeedFromSite(siteDataSnapshot);
+
+// Determine data sources with priority: snapshot > site data > fallback
+const missionsSeed = snapshotData?.missions && snapshotData.missions.length > 0
+  ? snapshotData.missions
+  : (buildMissionsSeedFromSite(siteDataSnapshot) ?? fallbackMissionsSeed);
+
+const projectsSeed = snapshotData?.projects && snapshotData.projects.length > 0
+  ? snapshotData.projects
+  : buildProjectsSeedFromSite(siteDataSnapshot);
 
 const fallbackContactInfoSeed = {
   id: 1,
@@ -511,9 +545,11 @@ function buildContactInfoSeed(siteData) {
   };
 }
 
-const contactInfoSeed = buildContactInfoSeed(siteDataSnapshot) ?? fallbackContactInfoSeed;
+const contactInfoSeed = snapshotData?.contactInfo
+  ? snapshotData.contactInfo
+  : (buildContactInfoSeed(siteDataSnapshot) ?? fallbackContactInfoSeed);
 
-const navigationSeed = [
+const fallbackNavigationSeed = [
   {
     label: {
       th: 'หน้าแรก',
@@ -572,7 +608,11 @@ const navigationSeed = [
   },
 ];
 
-const pageContentSeed = [
+const navigationSeed = snapshotData?.navigationItems && snapshotData.navigationItems.length > 0
+  ? snapshotData.navigationItems
+  : fallbackNavigationSeed;
+
+const fallbackPageContentSeed = [
   {
     page: 'landing',
     section: 'hero',
@@ -658,7 +698,11 @@ const pageContentSeed = [
   },
 ];
 
-const financialRecordsSeed = [
+const pageContentSeed = snapshotData?.pageContent && snapshotData.pageContent.length > 0
+  ? snapshotData.pageContent
+  : fallbackPageContentSeed;
+
+const fallbackFinancialRecordsSeed = [
   {
     date: new Date('2024-01-01T00:00:00.000Z'),
     notes: 'ม.ค. 2024',
@@ -714,6 +758,10 @@ const financialRecordsSeed = [
     ],
   },
 ];
+
+const financialRecordsSeed = snapshotData?.financialRecords && snapshotData.financialRecords.length > 0
+  ? snapshotData.financialRecords
+  : fallbackFinancialRecordsSeed;
 
 async function seedProjects() {
   await prisma.futureProject.deleteMany();

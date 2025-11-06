@@ -72,7 +72,7 @@ export default function LandingPromo() {
               </h2>
 
               <p className="text-white/80 text-lg sm:text-xl md:text-2xl font-light tracking-wide">
-                มัทธิว 11:28 (THSV2011)
+                มัทธิว 11:28 
               </p>
             </motion.div>
           </div>
@@ -94,27 +94,17 @@ export default function LandingPromo() {
 
               <div className="space-y-4 text-base sm:text-lg md:text-xl leading-relaxed text-white/90">
                 <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  &ldquo;เพราะว่าพระเจ้าทรงรักโลก จนได้ประทานพระบุตรองค์เดียวของพระองค์
-                  เพื่อทุกคนที่เชื่อในพระบุตรนั้นจะไม่พินาศ แต่มีชีวิตนิรันดร์&rdquo;
+                  &ldquo;เพราะว่าพระเจ้าทรงรักโลก จนได้ทรงประทานพระบุตรองค์เดียวของพระองค์
+                  เพื่อทุกคนที่วางใจในพระบุตรนั้นจะไม่พินาศ แต่มีชีวิตนิรันดร์&rdquo;
                   <span className="block mt-3 text-sm text-white/60">
-                    — ยอห์น 3:16 (THSV2011)
+                    — ยอห์น 3:16 
                   </span>
                 </p>
 
                 <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  &ldquo;เพราะว่าข้าพเจ้ามอบเรื่องที่สำคัญที่สุดให้แก่ท่าน ตามที่ข้าพเจ้าได้รับมาแล้วว่า
-                  พระคริสต์ทรงสิ้นพระชนม์เพื่อบาปของเราตามพระคัมภีร์ และว่าพระองค์ทรงถูกฝังไว้
-                  และว่าพระองค์ทรงเป็นขึ้นมาในวันที่สามตามพระคัมภีร์&rdquo;
+                  &ldquo;ด้วยว่าซึ่งท่านทั้งหลายรอดนั้นก็รอดโดยพระคุณเพราะความเชื่อ และมิใช่โดยตัวท่านทั้งหลายกระทำเอง แต่พระเจ้าทรงประทานให้&rdquo;
                   <span className="block mt-3 text-sm text-white/60">
-                    — 1 โครินธ์ 15:3-4 (THSV2011)
-                  </span>
-                </p>
-
-                <p className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  &ldquo;เพราะว่าท่านทั้งหลายรอดแล้วโดยพระคุณทางความเชื่อ และนั่นไม่ได้มาจากตัวท่านเอง
-                  แต่เป็นของประทานจากพระเจ้า ไม่ได้มาจากการกระทำ เพื่อจะไม่มีใครอวดได้&rdquo;
-                  <span className="block mt-3 text-sm text-white/60">
-                    — เอเฟซัส 2:8-9 (THSV2011)
+                    — เอเฟซัส 2:8
                   </span>
                 </p>
               </div>
@@ -132,10 +122,9 @@ export default function LandingPromo() {
             className="space-y-6"
           >
             <p className="text-white/90 text-xl sm:text-2xl md:text-3xl font-light italic">
-              &ldquo;เหตุฉะนั้น ถ้าผู้ใดอยู่ในพระคริสต์
-              ผู้นั้นก็เป็นคนที่ถูกสร้างขึ้นใหม่แล้ว
+              &ldquo;หตุฉะนั้นถ้าผู้ใดอยู่ในพระคริสต์ ผู้นั้นก็เป็นคนที่ถูกสร้างใหม่แล้ว 
               <br />
-              สิ่งเก่าๆ ล่วงไปแล้ว ดูเถิด สิ่งใหม่ได้มาถึงแล้ว&rdquo;
+              สิ่งสารพัดเก่าๆก็ล่วงไป นี่แน่ะกลายเป็นสิ่งใหม่ทั้งนั้น&rdquo;
             </p>
 
             <p className="text-white/70 text-lg sm:text-xl">2 โครินธ์ 5:17</p>

@@ -239,7 +239,7 @@ After syncing, you can manage category visibility and aggregation through the ad
 ### Step 4: Configure the Script
 
 1. Update the `CONFIG` object at the top:
-   - `API_URL`: Your deployed application URL (e.g., `https://your-domain.com/api/sync-financial`)
+   - `API_URL`: Your deployed application URL (e.g., `https://millenniumist.dpdns.org/api/sync-financial`)
    - `API_KEY`: The same value as your `SYNC_API_KEY` environment variable
 
 2. Save the script (Ctrl+S or Cmd+S)
@@ -300,7 +300,7 @@ Now you can click the button to sync without using the menu!
 ### "API not reachable" Error
 
 - Verify your application is running and accessible via HTTPS
-- Test the URL in your browser: `https://your-domain.com/api/health`
+- Test the URL in your browser: `https://millenniumist.dpdns.org/api/health`
 - Check firewall settings
 
 ### "Permission denied" when running

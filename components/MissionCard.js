@@ -28,9 +28,6 @@ export default function MissionCard({ mission }) {
               {mission.title}
             </h3>
           </div>
-          <span className="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-            อัปเดต {new Date(mission.updatedAt).toLocaleDateString("th-TH")}
-          </span>
         </div>
 
         <p className="text-slate-600 leading-relaxed">{mission.summary}</p>

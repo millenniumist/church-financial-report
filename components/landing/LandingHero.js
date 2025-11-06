@@ -30,6 +30,7 @@ export default function LandingHero() {
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [navItems, setNavItems] = useState(DEFAULT_NAV_ITEMS);
+  const [socialLinks, setSocialLinks] = useState({ facebook: null, youtube: null });
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ["start start", "end start"],
@@ -115,6 +116,33 @@ export default function LandingHero() {
     }
 
     loadNavigation();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadContactInfo() {
+      try {
+        const res = await fetch("/api/contact?locale=th");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data?.social) {
+          setSocialLinks({
+            facebook: data.social.facebook || null,
+            youtube: data.social.youtube || null,
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setSocialLinks({ facebook: null, youtube: null });
+        }
+      }
+    }
+
+    loadContactInfo();
     return () => {
       cancelled = true;
     };
@@ -230,9 +258,6 @@ export default function LandingHero() {
                       <p className="mt-1 text-lg font-semibold text-white">
                         {mission.title}
                       </p>
-                      <p className="mt-1 text-xs text-white/80">
-                        อัปเดต {new Date(mission.updatedAt).toLocaleDateString("th-TH")}
-                      </p>
                     </div>
                   ))
                 ) : (
@@ -247,6 +272,103 @@ export default function LandingHero() {
               >
                 {content.cta?.label ?? DEFAULT_CONTENT.cta.label} <span aria-hidden="true">→</span>
               </Link>
+              {(socialLinks.facebook || socialLinks.youtube) && (
+                <div className="mt-6">
+                  <style jsx>{`
+                    @keyframes shine {
+                      0% {
+                        background-position: -200% center;
+                      }
+                      100% {
+                        background-position: 200% center;
+                      }
+                    }
+                    @keyframes wiggle {
+                      0%, 100% {
+                        transform: rotate(0deg) scale(1);
+                      }
+                      25% {
+                        transform: rotate(-5deg) scale(1.05);
+                      }
+                      75% {
+                        transform: rotate(5deg) scale(1.05);
+                      }
+                    }
+                    @keyframes pulse-glow {
+                      0%, 100% {
+                        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.3);
+                      }
+                      50% {
+                        box-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.5);
+                      }
+                    }
+                    .social-icon {
+                      position: relative;
+                      overflow: hidden;
+                      animation: wiggle 2s ease-in-out infinite, pulse-glow 2s ease-in-out infinite;
+                      background: linear-gradient(
+                        135deg,
+                        rgba(255, 255, 255, 0.2) 0%,
+                        rgba(255, 255, 255, 0.3) 50%,
+                        rgba(255, 255, 255, 0.2) 100%
+                      );
+                      background-size: 200% 200%;
+                    }
+                    .social-icon::before {
+                      content: '';
+                      position: absolute;
+                      top: 0;
+                      left: -100%;
+                      width: 100%;
+                      height: 100%;
+                      background: linear-gradient(
+                        90deg,
+                        transparent,
+                        rgba(255, 255, 255, 0.6),
+                        transparent
+                      );
+                      animation: shine 2s infinite;
+                    }
+                    .social-icon:hover {
+                      animation: none;
+                      background: white;
+                      transform: scale(1.1);
+                    }
+                  `}</style>
+                  <p className="text-white font-bold text-xl mb-8 ">
+                    ติดตามถ่ายทอดสดและกิจกรรมล่าสุด
+                  </p>
+                  <div className="flex gap-4">
+                    {socialLinks.facebook && (
+                      <a
+                        href={socialLinks.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-icon w-24 h-24 mx-2 rounded-full backdrop-blur-md border-2 border-white/50 flex items-center justify-center text-white hover:text-slate-900 transition-all duration-300"
+                        aria-label="Facebook - ติดตามถ่ายทอดสดและกิจกรรม"
+                      >
+                        <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+                        </svg>
+                      </a>
+                    )}
+                    {socialLinks.youtube && (
+                      <a
+                        href={socialLinks.youtube}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-icon w-24 h-24 mx-2 rounded-full backdrop-blur-md border-2 border-white/50 flex items-center justify-center text-white hover:text-slate-900 transition-all duration-300"
+                        aria-label="YouTube - รับชมถ่ายทอดสดและคลิปวิดีโอ"
+                        style={{ animationDelay: '0.5s' }}
+                      >
+                        <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
