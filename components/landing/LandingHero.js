@@ -42,7 +42,7 @@ export default function LandingHero() {
     let cancelled = false;
     async function loadMissions() {
       try {
-        const res = await fetch("/api/missions?page=1&pageSize=2");
+        const res = await fetch("/api/missions?highlightOnly=true");
         if (!res.ok) throw new Error("Failed to load missions");
         const data = await res.json();
         if (!cancelled) {
@@ -243,29 +243,27 @@ export default function LandingHero() {
               {content.description}
             </p>
             <div className="space-y-6">
-              <div className="grid gap-4">
-                {loading ? (
-                  <div className="h-24 w-full rounded-2xl bg-white/20 animate-pulse" aria-hidden="true" />
-                ) : highlights.length ? (
-                  highlights.slice(0, 1).map((mission) => (
-                    <div
-                      key={mission.id}
-                      className="rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm text-white/90 backdrop-blur"
-                    >
-                      <p className="text-xs uppercase tracking-wide text-white/70">
-                        {mission.theme}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold text-white">
-                        {mission.title}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm text-white/80 backdrop-blur">
-                    ขณะนี้ยังไม่มีพันธกิจไฮไลต์ กรุณากลับมาใหม่อีกครั้ง
-                  </div>
-                )}
-              </div>
+              {(loading || highlights.length > 0) && (
+                <div className="grid gap-4">
+                  {loading ? (
+                    <div className="h-24 w-full rounded-2xl bg-white/20 animate-pulse" aria-hidden="true" />
+                  ) : (
+                    highlights.slice(0, 1).map((mission) => (
+                      <div
+                        key={mission.id}
+                        className="rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm text-white/90 backdrop-blur"
+                      >
+                        <p className="text-xs uppercase tracking-wide text-white/70">
+                          {mission.theme}
+                        </p>
+                        <p className="mt-1 text-lg font-semibold text-white">
+                          {mission.title}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
               <Link
                 href={content.cta?.href ?? DEFAULT_CONTENT.cta.href}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-white bg-transparent text-white text-sm uppercase font-semibold transition-all duration-300 hover:bg-white hover:text-slate-900"

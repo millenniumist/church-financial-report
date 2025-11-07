@@ -46,12 +46,14 @@ export async function GET(request) {
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const pageSize = Number.parseInt(searchParams.get('pageSize') || '6', 10);
   const locale = searchParams.get('locale') || 'th';
+  const highlightOnly = searchParams.get('highlightOnly') === 'true';
 
   try {
     const data = await getMissions({
       page: Number.isNaN(page) ? 1 : page,
       pageSize: Number.isNaN(pageSize) ? 6 : pageSize,
       locale,
+      highlightOnly,
     });
 
     return NextResponse.json(data, {
