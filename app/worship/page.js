@@ -10,6 +10,9 @@ export const metadata = genMetadata({
   keywords: ['นมัสการ', 'เวลานมัสการ', 'อธิษฐาน'],
 });
 
+// Force dynamic rendering to avoid database access during build
+export const dynamic = 'force-dynamic';
+
 export default async function WorshipPage() {
   const contactInfo = await getContactInfo('th');
 

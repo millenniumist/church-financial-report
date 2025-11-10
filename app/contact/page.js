@@ -3,6 +3,9 @@ import { generateMetadata as genMetadata } from '@/lib/seo';
 import { getContactInfo } from '@/lib/contact-info';
 import StickyNav from '@/components/landing/StickyNav';
 
+// Force dynamic rendering to avoid database access during build
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMetadata({
   title: 'ติดต่อเรา',
   description: 'ติดต่อคริสตจักรชลบุรี ภาค7 - ที่อยู่ เวลาทำการ และช่องทางการติดต่อ ยินดีต้อนรับทุกท่าน',

@@ -12,7 +12,8 @@ export const metadata = genMetadata({
   keywords: ['การเงิน', 'รายรับรายจ่าย', 'งบประมาณ', 'ความโปร่งใส'],
 });
 
-// Cache for 60 seconds to improve performance
+// Force dynamic rendering to avoid database access during build
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 export default async function FinancialPage() {
