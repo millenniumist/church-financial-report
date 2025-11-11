@@ -1,0 +1,24 @@
+services:
+  nextjs-app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: nextjs-app
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      PORT: 8358
+      GOOGLE_SERVICE_ACCOUNT_PATH: /app/privatekey-gsheet.json
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID:?GOOGLE_SHEETS_SPREADSHEET_ID is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+    ports:
+      - "8358:8358"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

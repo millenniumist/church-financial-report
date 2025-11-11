@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# Docker
+.dockerignore
+
 # next.js
 /.next/
 /out/
@@ -55,3 +58,19 @@ next-env.d.ts
 # docker cron (deprecated - now using Google Apps Script)
 /docker/cron
 /app/api/cron
+
+# Deployment configuration (deployment/config.sh contains local paths)
+deployment/config.sh
+deployment/.env
+
+# Cloudflare tunnel credentials in deployment directory
+deployment/cloudflare/*.json
+deployment/cloudflare/*.pem
+deployment/cloudflare/config.yml
+
+# Deployment logs
+deployment/*.log
+deployment/cloudflared.log
+
+# Backup files
+*.tar.gz
