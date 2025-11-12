@@ -130,3 +130,18 @@ model CategorySettings {
 
   @@unique([year])
 }
+
+model Bulletin {
+  id              String   @id @default(cuid())
+  title           Json                    // Multi-language title
+  date            DateTime                // Sunday service date
+  localPath       String                  // Local file path on Raspberry Pi
+  cloudinaryUrl   String?                 // Backup URL on Cloudinary
+  fileSize        Int?                    // File size in bytes
+  isActive        Boolean  @default(true) // Published status
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([date(sort: Desc)])
+  @@index([isActive, date(sort: Desc)])
+}

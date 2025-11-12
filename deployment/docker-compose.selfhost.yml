@@ -1,8 +1,6 @@
 services:
   nextjs-app:
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: nextjs-app:latest
     container_name: nextjs-app
     environment:
       NODE_ENV: production

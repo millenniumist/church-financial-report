@@ -7,15 +7,19 @@ This directory contains all the infrastructure and scripts needed to self-host t
 ```
 deployment/
 ├── deploy-local.sh              # Deploy to local machine
-├── deploy-remote.sh             # Deploy to remote host
+├── deploy-remote.sh             # Deploy to remote host (includes health monitoring)
 ├── docker-compose.selfhost.yml  # Docker Compose configuration
-├── config.example.sh            # Configuration template
-├── .env.example                 # Remote host connection template
+├── config.example.sh            # Optional configuration overrides
+├── .env.example                 # Configuration template (SSH, MQTT, health monitor)
+├── .env                         # Your configuration (create from .env.example)
+├── health-monitor.js            # Health monitoring service with MQTT
+├── health-monitor.service       # Systemd service file
 ├── cloudflare/                  # Cloudflare Tunnel configuration
 │   ├── config.example.yml
 │   └── README.md
-├── scripts/                     # Deployment helper scripts
 ├── DEPLOY-README.md             # Detailed deployment guide
+├── HEALTH_MONITOR_README.md     # Health monitoring documentation
+├── MQTT_ANDROID_SETUP.md        # Android MQTT dashboard setup
 └── README.md                    # This file
 ```
 
@@ -92,13 +96,31 @@ NODE_ENV="production"
 
 **Note:** In the monorepo, you no longer need `DEV_DIR` - the scripts automatically use `../app`.
 
-### Remote Connection (`.env` for deploy-remote.sh)
+### Remote Connection & Health Monitoring (`.env` for deploy-remote.sh)
+
+Create `.env` from `.env.example`:
 
 ```bash
-hostIp="192.168.1.100"           # Local IP of remote host
-username="pi"                     # SSH username
-password="your-password"          # SSH password (optional if using keys)
+# Remote Host
+hostIp="192.168.1.100"
+username="pi"
+password="your-password"
+
+# Health Monitoring (optional)
+ENABLE_HEALTH_MONITOR=true
+MQTT_USERNAME=ccchurch
+MQTT_PASSWORD=your-mqtt-password
+MQTT_MOBILE_USERNAME=mobile
+MQTT_MOBILE_PASSWORD=your-mobile-password
+CHECK_INTERVAL=60000              # Check every 60 seconds
 ```
+
+**Health Monitoring Features:**
+- Automatic MQTT broker (Mosquitto) installation
+- Continuous app health monitoring
+- Publish metrics every 60 seconds
+- Android MQTT Dashboard support
+- Home Assistant auto-discovery
 
 ## 🔧 How It Works
 
@@ -121,16 +143,29 @@ The deployment scripts are designed to work seamlessly with the monorepo structu
 6. Start/restart Cloudflare Tunnel
 ```
 
-### Remote Deployment Flow
+### Remote Deployment Flow (Mac M2 → Raspberry Pi)
 
 ```
 1. Prepare .env.production locally
-2. Auto-detect connection (local network vs tunnel)
-3. rsync app directory to remote host
-4. Transfer docker-compose and cloudflare configs
-5. Build Docker image on remote host
-6. Start container and tunnel on remote host
+2. Build Docker image locally on Mac M2 (ARM64)
+3. Save and compress image as tar file
+4. Auto-detect connection (local network vs tunnel)
+5. Transfer pre-built image to Pi
+6. Transfer cloudflare configs
+7. Load Docker image on Pi (no build needed!)
+8. Start container and tunnel on Pi
+9. Setup health monitoring with MQTT (if enabled)
+   - Install Mosquitto broker
+   - Install Node.js and mqtt package
+   - Deploy health monitor service
+   - Start systemd service
+10. Verify all services running
 ```
+
+**Benefits:**
+- Much faster deployments (build on powerful Mac M2)
+- Less strain on Raspberry Pi resources
+- Architecture match (ARM64)
 
 ## 🐳 Docker Details
 

@@ -240,16 +240,35 @@ fi
 success "✓ Local deployment files present"
 echo ""
 
-# Step 3: Create remote deployment directory
-echo -e "${YELLOW}[3/8] Creating remote deployment directory...${NC}"
+# Step 3: Build Docker image locally on Mac M2
+echo -e "${YELLOW}[3/9] Building Docker image locally on Mac M2 (ARM64)...${NC}"
+IMAGE_NAME="nextjs-app"
+IMAGE_TAG="latest"
+IMAGE_TAR="nextjs-app-arm64.tar"
+
+info "Building image for ARM64 architecture..."
+cd "$APP_DIR"
+docker build --platform linux/arm64 -t "${IMAGE_NAME}:${IMAGE_TAG}" -f Dockerfile . || error "✗ Failed to build Docker image"
+success "✓ Docker image built: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+info "Saving image to tar file..."
+docker save "${IMAGE_NAME}:${IMAGE_TAG}" -o "/tmp/${IMAGE_TAR}" || error "✗ Failed to save Docker image"
+IMAGE_SIZE=$(du -h "/tmp/${IMAGE_TAR}" | cut -f1)
+success "✓ Image saved to /tmp/${IMAGE_TAR} (${IMAGE_SIZE})"
+cd "$LOCAL_DIR"
+echo ""
+
+# Step 4: Create remote deployment directory
+echo -e "${YELLOW}[4/9] Creating remote deployment directory...${NC}"
 ssh_cmd "mkdir -p $REMOTE_DEPLOY_DIR $REMOTE_APP_DIR $REMOTE_CLOUDFLARE_DIR" || error "✗ Failed to create remote directories"
 success "✓ Remote directories created"
 echo ""
 
-# Step 4: Transfer files to remote host
-echo -e "${YELLOW}[4/8] Transferring files to remote host...${NC}"
-info "Syncing app directory..."
-rsync_cmd -av --delete "$APP_DIR/" "$username@$TARGET_HOST:$REMOTE_APP_DIR/" || error "✗ Failed to sync app directory"
+# Step 5: Transfer files to remote host
+echo -e "${YELLOW}[5/9] Transferring files to remote host...${NC}"
+
+info "Transferring Docker image (${IMAGE_SIZE})..."
+scp_cmd "/tmp/${IMAGE_TAR}" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/" || error "✗ Failed to transfer Docker image"
 
 info "Copying docker-compose file..."
 scp_cmd "$COMPOSE_FILE" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/" || error "✗ Failed to copy docker-compose file"
@@ -257,11 +276,19 @@ scp_cmd "$COMPOSE_FILE" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/" || error "�
 info "Syncing cloudflare directory..."
 rsync_cmd -av "$CLOUDFLARE_DIR/" "$username@$TARGET_HOST:$REMOTE_CLOUDFLARE_DIR/" || error "✗ Failed to sync cloudflare directory"
 
+info "Syncing environment and config files..."
+rsync_cmd -av --delete --exclude="node_modules" --exclude=".next" "$APP_DIR/.env.production" "$username@$TARGET_HOST:$REMOTE_APP_DIR/" || error "✗ Failed to sync environment file"
+
 success "✓ Files transferred to remote host"
 echo ""
 
-# Step 5: Check remote requirements and load environment
-echo -e "${YELLOW}[5/8] Checking remote environment...${NC}"
+# Clean up local tar file
+rm -f "/tmp/${IMAGE_TAR}"
+info "Cleaned up local image file"
+echo ""
+
+# Step 6: Check remote requirements and load environment
+echo -e "${YELLOW}[6/9] Checking remote environment...${NC}"
 ssh_cmd bash <<'REMOTE_CHECK'
 set -e
 
@@ -297,12 +324,25 @@ REMOTE_CHECK
 success "✓ Remote environment verified"
 echo ""
 
-# Step 6: Rebuild and start Docker container on remote host
-echo -e "${YELLOW}[6/8] Building and restarting nextjs-app container on remote host...${NC}"
+# Step 7: Load Docker image and start container on remote host
+echo -e "${YELLOW}[7/9] Loading Docker image and starting container on remote host...${NC}"
 ssh_cmd bash <<REMOTE_DEPLOY
 set -e
 
 cd $REMOTE_DEPLOY_DIR
+
+# Load Docker image from tar file
+echo "Loading Docker image from tar file..."
+docker load -i ${IMAGE_TAR} || { echo "✗ Failed to load Docker image"; exit 1; }
+echo "✓ Docker image loaded successfully"
+
+# Remove old images to save space
+echo "Cleaning up old images..."
+docker image prune -f >/dev/null 2>&1 || true
+
+# Remove the tar file to save space
+rm -f ${IMAGE_TAR}
+echo "✓ Cleaned up tar file"
 
 # Load environment variables from .env.production
 if [ -f app/.env.production ]; then
@@ -328,17 +368,17 @@ else
   DOCKER_COMPOSE_CMD="docker-compose"
 fi
 
-# Build and start container
-\$DOCKER_COMPOSE_CMD -f docker-compose.selfhost.yml up -d --build nextjs-app
+# Start container (without building - image is already loaded)
+\$DOCKER_COMPOSE_CMD -f docker-compose.selfhost.yml up -d nextjs-app
 
-echo "✓ Container rebuilt and started"
+echo "✓ Container started from pre-built image"
 REMOTE_DEPLOY
 
 success "✓ nextjs-app container running on remote host"
 echo ""
 
-# Step 7: Health check
-echo -e "${YELLOW}[7/8] Running health checks...${NC}"
+# Step 8: Health check
+echo -e "${YELLOW}[8/9] Running health checks...${NC}"
 sleep 5
 
 # Check if container is running
@@ -357,8 +397,8 @@ else
 fi
 echo ""
 
-# Step 8: Restart Cloudflare tunnel on remote host
-echo -e "${YELLOW}[8/8] Restarting Cloudflare tunnel on remote host...${NC}"
+# Step 9: Setup and start Cloudflare tunnel with auto-start on remote host
+echo -e "${YELLOW}[9/10] Setting up Cloudflare tunnel with auto-start on remote host...${NC}"
 ssh_cmd bash <<REMOTE_TUNNEL
 set -e
 
@@ -394,35 +434,189 @@ CONFIG
 
 echo "Created config.yml with credentials path: \$CREDENTIAL_FILE_ABS"
 
-# Stop existing tunnel
+# Find cloudflared binary path
+CLOUDFLARED_BIN=\$(which cloudflared)
+if [ -z "\$CLOUDFLARED_BIN" ]; then
+  echo "✗ cloudflared not found in PATH"
+  exit 1
+fi
+
+# Create systemd service file
+sudo tee /etc/systemd/system/cloudflared.service > /dev/null <<SERVICE
+[Unit]
+Description=Cloudflare Tunnel
+After=network.target
+
+[Service]
+Type=simple
+User=$username
+WorkingDirectory=$REMOTE_DEPLOY_DIR
+ExecStart=\$CLOUDFLARED_BIN tunnel --config $REMOTE_DEPLOY_DIR/cloudflare/config.yml run \$TUNNEL_NAME
+Restart=always
+RestartSec=5
+StandardOutput=append:$REMOTE_DEPLOY_DIR/\$LOG_FILE
+StandardError=append:$REMOTE_DEPLOY_DIR/\$LOG_FILE
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+echo "✓ Created systemd service file"
+
+# Stop existing manual tunnel processes
 if pgrep cloudflared >/dev/null 2>&1; then
-  echo "Stopping existing cloudflared process..."
+  echo "Stopping existing cloudflared processes..."
   pkill cloudflared || true
   sleep 2
 fi
 
-# Start tunnel in background
-nohup cloudflared tunnel --config cloudflare/config.yml run "\$TUNNEL_NAME" > "\$LOG_FILE" 2>&1 &
-sleep 8
+# Reload systemd and enable service
+sudo systemctl daemon-reload
+sudo systemctl enable cloudflared
+sudo systemctl restart cloudflared
+sleep 5
 
 # Verify tunnel is running
-if pgrep cloudflared >/dev/null 2>&1; then
-  echo "✓ Cloudflare tunnel started"
-
+if sudo systemctl is-active --quiet cloudflared; then
+  echo "✓ Cloudflare tunnel service is running"
+  echo "✓ Auto-start on boot enabled"
+  
+  # Check logs for errors
   if grep -i "error" "\$LOG_FILE" >/dev/null 2>&1; then
     echo "⚠️  Detected errors in cloudflared logs:"
     tail -n 5 "\$LOG_FILE" || true
   else
-    echo "Logs available at: $REMOTE_DEPLOY_DIR/\$LOG_FILE"
+    echo "✓ Tunnel connections established successfully"
   fi
 else
-  echo "✗ Failed to start cloudflared tunnel"
+  echo "✗ Failed to start cloudflared service"
+  sudo systemctl status cloudflared --no-pager || true
   exit 1
 fi
+
+echo ""
+echo "Service management commands:"
+echo "  sudo systemctl status cloudflared   # Check status"
+echo "  sudo systemctl restart cloudflared  # Restart tunnel"
+echo "  sudo systemctl stop cloudflared     # Stop tunnel"
+echo "  tail -f $REMOTE_DEPLOY_DIR/\$LOG_FILE  # View logs"
 REMOTE_TUNNEL
 
-success "✓ Cloudflare tunnel running on remote host"
+success "✓ Cloudflare tunnel running with auto-start enabled on remote host"
 echo ""
+
+# Step 10: Setup Health Monitor with MQTT (if enabled)
+if [ "${ENABLE_HEALTH_MONITOR:-true}" = "true" ] && [ -f "$LOCAL_DIR/health-monitor.js" ]; then
+  echo -e "${YELLOW}[10/10] Setting up health monitoring with MQTT...${NC}"
+
+  # Check if Mosquitto is installed
+  if ! ssh_cmd "command -v mosquitto" >/dev/null 2>&1; then
+    info "Installing Mosquitto MQTT broker..."
+    ssh_cmd "sudo apt update && sudo apt install -y mosquitto mosquitto-clients" >/dev/null 2>&1 || warn "⚠️  Failed to install Mosquitto"
+  fi
+
+  # Configure Mosquitto if not already configured
+  ssh_cmd bash <<SETUP_MQTT
+    set -e
+
+    # Check if config exists
+    if [ ! -f /etc/mosquitto/conf.d/default.conf ]; then
+      echo "Configuring Mosquitto..."
+      sudo tee /etc/mosquitto/conf.d/default.conf > /dev/null <<'EOF'
+listener 1883 0.0.0.0
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+EOF
+
+      # Create users
+      sudo mosquitto_passwd -c -b /etc/mosquitto/passwd ${MQTT_USERNAME:-ccchurch} ${MQTT_PASSWORD:-ccchurch2025}
+      sudo mosquitto_passwd -b /etc/mosquitto/passwd ${MQTT_MOBILE_USERNAME:-mobile} ${MQTT_MOBILE_PASSWORD:-mobile2025}
+
+      # Fix permissions
+      sudo chown mosquitto:mosquitto /etc/mosquitto/passwd
+      sudo chmod 600 /etc/mosquitto/passwd
+
+      # Restart
+      sudo systemctl restart mosquitto
+      echo "✓ Mosquitto configured"
+    fi
+
+    # Ensure Mosquitto is running
+    sudo systemctl enable mosquitto >/dev/null 2>&1
+    if ! sudo systemctl is-active --quiet mosquitto; then
+      sudo systemctl start mosquitto
+    fi
+SETUP_MQTT
+
+  # Check if Node.js is installed
+  if ! ssh_cmd "command -v node" >/dev/null 2>&1; then
+    info "Installing Node.js..."
+    ssh_cmd "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs" >/dev/null 2>&1 || warn "⚠️  Failed to install Node.js"
+  fi
+
+  # Install mqtt package
+  ssh_cmd bash <<INSTALL_NPM
+    set -e
+    cd $REMOTE_DEPLOY_DIR
+    if [ ! -f package.json ]; then
+      cat > package.json <<'PKG'
+{
+  "name": "cc-church-monitoring",
+  "version": "1.0.0",
+  "dependencies": {
+    "mqtt": "^5.0.0"
+  }
+}
+PKG
+    fi
+    npm install >/dev/null 2>&1
+INSTALL_NPM
+
+  # Create health-monitor.env from main env
+  cat > /tmp/health-monitor.env <<HEALTHENV
+APP_URL=${APP_URL:-http://localhost:8358}
+CONTAINER_NAME=${CONTAINER_NAME:-nextjs-app}
+HEALTH_ENDPOINT=${HEALTH_ENDPOINT:-/api/health}
+MQTT_BROKER=${MQTT_BROKER:-mqtt://$hostIp:1883}
+MQTT_TOPIC=${MQTT_TOPIC:-homeassistant/sensor/cc-church}
+MQTT_CLIENT_ID=${MQTT_CLIENT_ID:-cc-church-health}
+MQTT_USERNAME=${MQTT_USERNAME:-ccchurch}
+MQTT_PASSWORD=${MQTT_PASSWORD:-ccchurch2025}
+CHECK_INTERVAL=${CHECK_INTERVAL:-60000}
+HEALTHENV
+
+  # Transfer files
+  info "Transferring health monitor files..."
+  scp_cmd "$LOCAL_DIR/health-monitor.js" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/"
+  scp_cmd "/tmp/health-monitor.env" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/health-monitor.env"
+  scp_cmd "$LOCAL_DIR/health-monitor.service" "$username@$TARGET_HOST:/tmp/"
+  ssh_cmd "chmod +x $REMOTE_DEPLOY_DIR/health-monitor.js"
+  rm -f /tmp/health-monitor.env
+
+  # Install or update systemd service
+  ssh_cmd bash <<INSTALL_SERVICE
+    set -e
+
+    # Copy service file
+    sudo cp /tmp/health-monitor.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable health-monitor.service
+
+    # Restart service
+    sudo systemctl restart health-monitor.service
+
+    # Wait and check
+    sleep 3
+    if sudo systemctl is-active --quiet health-monitor.service; then
+      echo "✓ Health monitor is running"
+    else
+      echo "⚠️  Health monitor may have issues. Check: sudo journalctl -u health-monitor -n 20"
+    fi
+INSTALL_SERVICE
+
+  success "✓ Health monitoring with MQTT enabled"
+  echo ""
+fi
 
 echo -e "${GREEN}==================================${NC}"
 echo -e "${GREEN}✅ Remote Deployment Complete${NC}"
@@ -431,8 +625,21 @@ echo ""
 echo "App URL:    https://$DOMAIN"
 echo "Remote:     http://$hostIp:$APP_PORT"
 echo ""
-echo "Next steps:"
+echo "Services:"
 echo "  - ssh $username@$hostIp 'docker logs $CONTAINER_NAME'    # Application logs"
 echo "  - ssh $username@$hostIp 'tail -f $REMOTE_DEPLOY_DIR/$CLOUDFLARED_LOG'    # Tunnel logs"
 echo "  - ssh $username@$hostIp 'docker ps'                       # Container status"
 echo ""
+
+if [ "${ENABLE_HEALTH_MONITOR:-true}" = "true" ]; then
+  echo "Health Monitoring:"
+  echo "  - ssh $username@$hostIp 'sudo systemctl status health-monitor'    # Service status"
+  echo "  - ssh $username@$hostIp 'tail -f $REMOTE_DEPLOY_DIR/health-monitor.log'    # Monitor logs"
+  echo ""
+  echo "MQTT Dashboard (Android):"
+  echo "  Broker: mqtt://$hostIp:1883"
+  echo "  Username: ${MQTT_MOBILE_USERNAME:-mobile}"
+  echo "  Password: ${MQTT_MOBILE_PASSWORD:-mobile2025}"
+  echo "  Topic: ${MQTT_TOPIC:-homeassistant/sensor/cc-church}/#"
+  echo ""
+fi

@@ -24,7 +24,8 @@ export default function AdminNav() {
   const navItems = [
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/missions', label: 'Missions' },
-    { href: '/admin/projects', label: 'Projects' }
+    { href: '/admin/projects', label: 'Projects' },
+    { href: '/admin/bulletins', label: 'Bulletins' }
   ];
 
   return (
