@@ -113,6 +113,10 @@ MQTT_PASSWORD=your-mqtt-password
 MQTT_MOBILE_USERNAME=mobile
 MQTT_MOBILE_PASSWORD=your-mobile-password
 CHECK_INTERVAL=60000              # Check every 60 seconds
+
+# Tailscale (optional - for remote MQTT access)
+ENABLE_TAILSCALE=true
+TAILSCALE_AUTH_KEY=""             # Optional: Pre-auth key for unattended setup
 ```
 
 **Health Monitoring Features:**
@@ -121,6 +125,12 @@ CHECK_INTERVAL=60000              # Check every 60 seconds
 - Publish metrics every 60 seconds
 - Android MQTT Dashboard support
 - Home Assistant auto-discovery
+
+**Tailscale Integration (Remote Access):**
+- Secure remote MQTT access without port forwarding
+- Automatic Tailscale installation during deployment
+- Optional pre-auth key for unattended setup
+- Access MQTT from anywhere via Tailscale IP
 
 ## 🔧 How It Works
 
@@ -159,7 +169,11 @@ The deployment scripts are designed to work seamlessly with the monorepo structu
    - Install Node.js and mqtt package
    - Deploy health monitor service
    - Start systemd service
-10. Verify all services running
+10. Setup Tailscale for remote access (if enabled)
+   - Install Tailscale on Pi
+   - Authenticate (auto with pre-auth key or manual)
+   - Get Tailscale IP
+11. Verify all services running
 ```
 
 **Benefits:**

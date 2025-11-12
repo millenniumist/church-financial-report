@@ -618,6 +618,39 @@ INSTALL_SERVICE
   echo ""
 fi
 
+# Step 11: Setup Tailscale for remote access (optional)
+if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
+  echo -e "${YELLOW}[11/11] Setting up Tailscale for remote MQTT access...${NC}"
+
+  # Check if Tailscale is installed
+  if ! ssh_cmd "command -v tailscale" >/dev/null 2>&1; then
+    info "Installing Tailscale..."
+    ssh_cmd "curl -fsSL https://tailscale.com/install.sh | sh" || warn "⚠️  Failed to install Tailscale"
+  fi
+
+  # Check if already authenticated
+  if ! ssh_cmd "sudo tailscale status" >/dev/null 2>&1; then
+    if [ -n "${TAILSCALE_AUTH_KEY:-}" ]; then
+      info "Authenticating with pre-auth key..."
+      ssh_cmd "sudo tailscale up --auth-key=${TAILSCALE_AUTH_KEY}" || warn "⚠️  Failed to authenticate Tailscale"
+    else
+      warn "⚠️  Tailscale installed but not authenticated"
+      warn "    Run: ssh $username@$hostIp 'sudo tailscale up'"
+      warn "    Or set TAILSCALE_AUTH_KEY in .env for automatic setup"
+    fi
+  fi
+
+  # Get Tailscale IP
+  TAILSCALE_IP=$(ssh_cmd "sudo tailscale ip -4 2>/dev/null" || echo "")
+
+  if [ -n "$TAILSCALE_IP" ]; then
+    success "✓ Tailscale connected: $TAILSCALE_IP"
+  else
+    info "⚠️  Tailscale not yet authenticated. See TAILSCALE_SETUP.md"
+  fi
+  echo ""
+fi
+
 echo -e "${GREEN}==================================${NC}"
 echo -e "${GREEN}✅ Remote Deployment Complete${NC}"
 echo -e "${GREEN}==================================${NC}"
@@ -637,9 +670,22 @@ if [ "${ENABLE_HEALTH_MONITOR:-true}" = "true" ]; then
   echo "  - ssh $username@$hostIp 'tail -f $REMOTE_DEPLOY_DIR/health-monitor.log'    # Monitor logs"
   echo ""
   echo "MQTT Dashboard (Android):"
-  echo "  Broker: mqtt://$hostIp:1883"
-  echo "  Username: ${MQTT_MOBILE_USERNAME:-mobile}"
-  echo "  Password: ${MQTT_MOBILE_PASSWORD:-mobile2025}"
-  echo "  Topic: ${MQTT_TOPIC:-homeassistant/sensor/cc-church}/#"
+  echo "  Local Network:"
+  echo "    Broker: mqtt://$hostIp:1883"
+  echo "    Username: ${MQTT_MOBILE_USERNAME:-mobile}"
+  echo "    Password: ${MQTT_MOBILE_PASSWORD:-mobile2025}"
+  echo "    Topic: ${MQTT_TOPIC:-homeassistant/sensor/cc-church}/#"
+
+  if [ "${ENABLE_TAILSCALE:-false}" = "true" ] && [ -n "${TAILSCALE_IP:-}" ]; then
+    echo ""
+    echo "  Remote Access (Tailscale):"
+    echo "    1. Install Tailscale app on your devices"
+    echo "    2. Login with same account"
+    echo "    3. Use Tailscale IP for MQTT:"
+    echo "       Broker: mqtt://$TAILSCALE_IP:1883"
+    echo "       Username: ${MQTT_MOBILE_USERNAME:-mobile}"
+    echo "       Password: ${MQTT_MOBILE_PASSWORD:-mobile2025}"
+    echo "       Topic: ${MQTT_TOPIC:-homeassistant/sensor/cc-church}/#"
+  fi
   echo ""
 fi
