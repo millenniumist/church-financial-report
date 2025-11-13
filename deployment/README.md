@@ -106,6 +106,13 @@ hostIp="192.168.1.100"
 username="pi"
 password="your-password"
 
+# PostgreSQL Database
+DB_NAME=cc_financial
+DB_USER=ccfinapp
+DB_PASSWORD=change-this-password
+DB_HOST=host.docker.internal
+DB_PORT=5432
+
 # Health Monitoring (optional)
 ENABLE_HEALTH_MONITOR=true
 MQTT_USERNAME=ccchurch
@@ -162,18 +169,24 @@ The deployment scripts are designed to work seamlessly with the monorepo structu
 4. Auto-detect connection (local network vs tunnel)
 5. Transfer pre-built image to Pi
 6. Transfer cloudflare configs
-7. Load Docker image on Pi (no build needed!)
-8. Start container and tunnel on Pi
-9. Setup health monitoring with MQTT (if enabled)
+7. Setup PostgreSQL database (if not already installed)
+   - Install PostgreSQL on Pi
+   - Create database and user
+   - Configure authentication
+   - Run database migrations
+8. Load Docker image on Pi (no build needed!)
+9. Start container and tunnel on Pi
+10. Run database migrations (create tables)
+11. Setup health monitoring with MQTT (if enabled)
    - Install Mosquitto broker
    - Install Node.js and mqtt package
    - Deploy health monitor service
    - Start systemd service
-10. Setup Tailscale for remote access (if enabled)
+12. Setup Tailscale for remote access (if enabled)
    - Install Tailscale on Pi
    - Authenticate (auto with pre-auth key or manual)
    - Get Tailscale IP
-11. Verify all services running
+13. Verify all services running
 ```
 
 **Benefits:**

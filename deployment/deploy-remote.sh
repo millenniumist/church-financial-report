@@ -287,8 +287,88 @@ rm -f "/tmp/${IMAGE_TAR}"
 info "Cleaned up local image file"
 echo ""
 
-# Step 6: Check remote requirements and load environment
-echo -e "${YELLOW}[6/9] Checking remote environment...${NC}"
+# Step 6: Setup PostgreSQL database (if needed)
+echo -e "${YELLOW}[6/12] Setting up PostgreSQL database...${NC}"
+
+# Read database config from .env
+DB_NAME="${DB_NAME:-cc_financial}"
+DB_USER="${DB_USER:-ccfinapp}"
+DB_PASSWORD="${DB_PASSWORD:-cc2025secure}"
+DB_HOST="${DB_HOST:-host.docker.internal}"
+DB_PORT="${DB_PORT:-5432}"
+
+ssh_cmd bash <<SETUP_DATABASE
+set -e
+
+# Check if PostgreSQL is installed
+if ! command -v psql >/dev/null 2>&1; then
+  echo "Installing PostgreSQL..."
+  sudo apt update
+  sudo apt install -y postgresql postgresql-contrib
+  sudo systemctl enable postgresql
+  sudo systemctl start postgresql
+  echo "✓ PostgreSQL installed"
+else
+  echo "✓ PostgreSQL already installed"
+fi
+
+# Check if PostgreSQL is running
+if ! sudo systemctl is-active --quiet postgresql; then
+  echo "Starting PostgreSQL..."
+  sudo systemctl start postgresql
+fi
+
+# Create database and user if they don't exist
+sudo -u postgres psql <<'PSQL'
+-- Create user if not exists
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '${DB_USER}') THEN
+    CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';
+  END IF;
+END
+\$\$;
+
+-- Create database if not exists
+SELECT 'CREATE DATABASE ${DB_NAME} OWNER ${DB_USER}'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')\gexec
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};
+PSQL
+
+echo "✓ Database and user configured"
+
+# Update pg_hba.conf to allow password authentication
+PG_VERSION=\$(psql --version | grep -oP '(?<=PostgreSQL )\d+')
+PG_HBA="/etc/postgresql/\$PG_VERSION/main/pg_hba.conf"
+
+if [ -f "\$PG_HBA" ]; then
+  # Check if host entry exists for ${DB_USER}
+  if ! sudo grep -q "^host.*${DB_NAME}.*${DB_USER}" "\$PG_HBA"; then
+    echo "# Allow ${DB_USER} to connect to ${DB_NAME}" | sudo tee -a "\$PG_HBA" > /dev/null
+    echo "host    ${DB_NAME}    ${DB_USER}    127.0.0.1/32    scram-sha-256" | sudo tee -a "\$PG_HBA" > /dev/null
+    echo "host    ${DB_NAME}    ${DB_USER}    ::1/128         scram-sha-256" | sudo tee -a "\$PG_HBA" > /dev/null
+    sudo systemctl reload postgresql
+    echo "✓ pg_hba.conf updated"
+  else
+    echo "✓ pg_hba.conf already configured"
+  fi
+fi
+
+# Test connection
+if PGPASSWORD='${DB_PASSWORD}' psql -h localhost -U ${DB_USER} -d ${DB_NAME} -c "SELECT 1" > /dev/null 2>&1; then
+  echo "✓ Database connection verified"
+else
+  echo "⚠️  Warning: Could not verify database connection"
+fi
+SETUP_DATABASE
+
+success "✓ PostgreSQL database ready"
+echo ""
+
+# Step 7: Check remote requirements and load environment
+echo -e "${YELLOW}[7/12] Checking remote environment...${NC}"
 ssh_cmd bash <<'REMOTE_CHECK'
 set -e
 
@@ -325,7 +405,7 @@ success "✓ Remote environment verified"
 echo ""
 
 # Step 7: Load Docker image and start container on remote host
-echo -e "${YELLOW}[7/9] Loading Docker image and starting container on remote host...${NC}"
+echo -e "${YELLOW}[8/12] Loading Docker image and starting container on remote host...${NC}"
 ssh_cmd bash <<REMOTE_DEPLOY
 set -e
 
@@ -377,9 +457,39 @@ REMOTE_DEPLOY
 success "✓ nextjs-app container running on remote host"
 echo ""
 
-# Step 8: Health check
-echo -e "${YELLOW}[8/9] Running health checks...${NC}"
-sleep 5
+# Step 8.5: Run database migrations
+echo -e "${YELLOW}[8.5/12] Running database migrations...${NC}"
+sleep 3  # Wait for container to be fully ready
+
+# Run migrations using Prisma
+info "Applying database schema..."
+if ssh_cmd "docker exec nextjs-app sh -c 'cd /app && cat prisma/migrations/*/migration.sql | PGPASSWORD=${DB_PASSWORD} psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME}'" 2>/dev/null; then
+  success "✓ Database migrations applied"
+else
+  # Try alternative: create tables from schema directly
+  warn "Migration files not found, attempting to create tables..."
+  ssh_cmd "docker exec nextjs-app sh -c 'PGPASSWORD=${DB_PASSWORD} psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} <<EOF
+CREATE TABLE IF NOT EXISTS \"Bulletin\" (
+  \"id\" TEXT NOT NULL,
+  \"title\" JSONB NOT NULL,
+  \"date\" TIMESTAMP(3) NOT NULL,
+  \"localPath\" TEXT NOT NULL,
+  \"cloudinaryUrl\" TEXT,
+  \"fileSize\" INTEGER,
+  \"isActive\" BOOLEAN NOT NULL DEFAULT true,
+  \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  \"updatedAt\" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT \"Bulletin_pkey\" PRIMARY KEY (\"id\")
+);
+CREATE INDEX IF NOT EXISTS \"Bulletin_date_idx\" ON \"Bulletin\"(\"date\" DESC);
+CREATE INDEX IF NOT EXISTS \"Bulletin_isActive_date_idx\" ON \"Bulletin\"(\"isActive\", \"date\" DESC);
+EOF'" || warn "⚠️  Could not create tables automatically"
+fi
+echo ""
+
+# Step 9: Health check
+echo -e "${YELLOW}[9/12] Running health checks...${NC}"
+sleep 2
 
 # Check if container is running
 CONTAINER_STATUS=$(ssh_cmd "docker ps --filter name=nextjs-app --format '{{.Status}}'")
@@ -398,7 +508,7 @@ fi
 echo ""
 
 # Step 9: Setup and start Cloudflare tunnel with auto-start on remote host
-echo -e "${YELLOW}[9/10] Setting up Cloudflare tunnel with auto-start on remote host...${NC}"
+echo -e "${YELLOW}[10/12] Setting up Cloudflare tunnel with auto-start on remote host...${NC}"
 ssh_cmd bash <<REMOTE_TUNNEL
 set -e
 
@@ -507,7 +617,7 @@ echo ""
 
 # Step 10: Setup Health Monitor with MQTT (if enabled)
 if [ "${ENABLE_HEALTH_MONITOR:-true}" = "true" ] && [ -f "$LOCAL_DIR/health-monitor.js" ]; then
-  echo -e "${YELLOW}[10/10] Setting up health monitoring with MQTT...${NC}"
+  echo -e "${YELLOW}[11/12] Setting up health monitoring with MQTT...${NC}"
 
   # Check if Mosquitto is installed
   if ! ssh_cmd "command -v mosquitto" >/dev/null 2>&1; then
@@ -620,7 +730,7 @@ fi
 
 # Step 11: Setup Tailscale for remote access (optional)
 if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
-  echo -e "${YELLOW}[11/11] Setting up Tailscale for remote MQTT access...${NC}"
+  echo -e "${YELLOW}[12/12] Setting up Tailscale for remote MQTT access...${NC}"
 
   # Check if Tailscale is installed
   if ! ssh_cmd "command -v tailscale" >/dev/null 2>&1; then
