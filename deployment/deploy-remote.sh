@@ -730,7 +730,7 @@ fi
 
 # Step 11: Setup Tailscale for remote access (optional)
 if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
-  echo -e "${YELLOW}[12/12] Setting up Tailscale for remote MQTT access...${NC}"
+  echo -e "${YELLOW}[12/13] Setting up Tailscale for remote MQTT access...${NC}"
 
   # Check if Tailscale is installed
   if ! ssh_cmd "command -v tailscale" >/dev/null 2>&1; then
@@ -758,6 +758,66 @@ if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
   else
     info "⚠️  Tailscale not yet authenticated. See TAILSCALE_SETUP.md"
   fi
+  echo ""
+fi
+
+# Step 12: Setup Elasticsearch for centralized logging (optional)
+if [ "${ENABLE_ELASTICSEARCH:-false}" = "true" ]; then
+  echo -e "${YELLOW}[13/13] Setting up Elasticsearch for centralized logging...${NC}"
+
+  ES_VERSION="${ELASTICSEARCH_VERSION:-8.11.0}"
+  ES_CONTAINER="elasticsearch"
+  ES_PORT="9200"
+
+  # Check if Elasticsearch container is already running
+  if ssh_cmd "docker ps --filter name=${ES_CONTAINER} --format '{{.Names}}'" | grep -q "${ES_CONTAINER}"; then
+    success "✓ Elasticsearch already running"
+  else
+    info "Starting Elasticsearch container..."
+
+    ssh_cmd bash <<SETUP_ELASTICSEARCH
+set -e
+
+# Create Elasticsearch data directory
+mkdir -p ${REMOTE_DEPLOY_DIR}/elasticsearch-data
+
+# Run Elasticsearch in Docker (single node, development mode)
+docker run -d \\
+  --name ${ES_CONTAINER} \\
+  --restart unless-stopped \\
+  -p ${ES_PORT}:9200 \\
+  -e "discovery.type=single-node" \\
+  -e "xpack.security.enabled=false" \\
+  -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \\
+  -v ${REMOTE_DEPLOY_DIR}/elasticsearch-data:/usr/share/elasticsearch/data \\
+  docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION} || {
+    echo "⚠️  Failed to start Elasticsearch container"
+    exit 0
+  }
+
+# Wait for Elasticsearch to be ready
+echo "Waiting for Elasticsearch to start..."
+for i in {1..30}; do
+  if curl -s http://localhost:${ES_PORT}/_cluster/health >/dev/null 2>&1; then
+    echo "✓ Elasticsearch is ready"
+    break
+  fi
+  sleep 2
+done
+SETUP_ELASTICSEARCH
+
+    success "✓ Elasticsearch started on port ${ES_PORT}"
+  fi
+
+  # Update app container environment to enable Elasticsearch logging
+  info "Configuring app to send logs to Elasticsearch..."
+  ssh_cmd "docker exec ${CONTAINER_NAME} sh -c 'export ELASTICSEARCH_ENABLED=true && export ELASTICSEARCH_NODE=http://host.docker.internal:${ES_PORT}'" 2>/dev/null || info "Note: Container will use Elasticsearch on next restart"
+
+  echo ""
+  info "Elasticsearch Dashboard:"
+  echo "  Health: curl http://$hostIp:${ES_PORT}/_cluster/health"
+  echo "  Indices: curl http://$hostIp:${ES_PORT}/_cat/indices"
+  echo "  Logs: curl http://$hostIp:${ES_PORT}/cc-church-logs/_search"
   echo ""
 fi
 

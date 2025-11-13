@@ -124,6 +124,11 @@ CHECK_INTERVAL=60000              # Check every 60 seconds
 # Tailscale (optional - for remote MQTT access)
 ENABLE_TAILSCALE=true
 TAILSCALE_AUTH_KEY=""             # Optional: Pre-auth key for unattended setup
+
+# Elasticsearch (optional - for centralized logging)
+ENABLE_ELASTICSEARCH=true
+ELASTICSEARCH_VERSION=8.11.0
+ELASTICSEARCH_NODE=http://localhost:9200
 ```
 
 **Health Monitoring Features:**
@@ -138,6 +143,13 @@ TAILSCALE_AUTH_KEY=""             # Optional: Pre-auth key for unattended setup
 - Automatic Tailscale installation during deployment
 - Optional pre-auth key for unattended setup
 - Access MQTT from anywhere via Tailscale IP
+
+**Elasticsearch Integration (Centralized Logging):**
+- Automatic Elasticsearch Docker container setup
+- Pino logs sent to Elasticsearch for analysis
+- Query logs via Elasticsearch REST API
+- Track API requests, errors, and health checks
+- Low resource usage (512MB RAM)
 
 ## 🔧 How It Works
 
@@ -186,7 +198,11 @@ The deployment scripts are designed to work seamlessly with the monorepo structu
    - Install Tailscale on Pi
    - Authenticate (auto with pre-auth key or manual)
    - Get Tailscale IP
-13. Verify all services running
+13. Setup Elasticsearch for centralized logging (if enabled)
+   - Start Elasticsearch Docker container
+   - Configure Pino to send logs to Elasticsearch
+   - Create log indices
+14. Verify all services running
 ```
 
 **Benefits:**

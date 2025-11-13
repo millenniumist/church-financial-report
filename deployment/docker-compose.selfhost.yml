@@ -9,6 +9,8 @@ services:
       GOOGLE_SERVICE_ACCOUNT_PATH: /app/privatekey-gsheet.json
       GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID:?GOOGLE_SHEETS_SPREADSHEET_ID is required}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      ELASTICSEARCH_ENABLED: ${ELASTICSEARCH_ENABLED:-false}
+      ELASTICSEARCH_NODE: ${ELASTICSEARCH_NODE:-http://host.docker.internal:9200}
     ports:
       - "8358:8358"
     restart: unless-stopped
