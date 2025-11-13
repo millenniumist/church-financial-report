@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
 // GET all projects
-export async function GET() {
+async function getHandler() {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,7 +19,7 @@ export async function GET() {
 
     return NextResponse.json({ projects });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    logError(request, error, { operation: 'admin_fetch_projects' });
     return NextResponse.json(
       { error: 'Failed to fetch projects' },
       { status: 500 }
@@ -27,7 +28,7 @@ export async function GET() {
 }
 
 // CREATE new project
-export async function POST(request) {
+async function postHandler(request) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,10 +50,13 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, project }, { status: 201 });
   } catch (error) {
-    console.error('Error creating project:', error);
+    logError(request, error, { operation: 'admin_create_project' });
     return NextResponse.json(
       { error: 'Failed to create project' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const POST = withLogging(postHandler);

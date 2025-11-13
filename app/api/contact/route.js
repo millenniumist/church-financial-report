@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getContactInfo, getContactInfoTranslations } from '@/lib/contact-info';
 import { prisma } from '@/lib/prisma';
+import { withLogging, logError } from '@/lib/logger';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
@@ -42,7 +43,7 @@ function ensureLocalizedArray(value, locale = 'th') {
   return value;
 }
 
-export async function GET(request) {
+async function getHandler(request) {
   const { searchParams } = new URL(request.url);
   const locale = searchParams.get('locale') || 'th';
 
@@ -61,7 +62,7 @@ export async function GET(request) {
       headers: CACHE_HEADERS,
     });
   } catch (error) {
-    console.error('Failed to fetch contact info', error);
+    logError(request, error, { operation: 'fetch_contact_info' });
     return NextResponse.json(
       { error: 'Unable to load contact info' },
       {
@@ -72,7 +73,7 @@ export async function GET(request) {
   }
 }
 
-export async function PUT(request) {
+async function putHandler(request) {
   if (!authorize(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -102,7 +103,10 @@ export async function PUT(request) {
 
     return NextResponse.json({ success: true, record });
   } catch (error) {
-    console.error('Failed to update contact info', error);
+    logError(request, error, { operation: 'update_contact_info' });
     return NextResponse.json({ error: 'Unable to update contact info' }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PUT = withLogging(putHandler);

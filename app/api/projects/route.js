@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { logger } from '@/lib/logger';
+import { withLogging, logError } from '@/lib/logger';
 
-export async function GET(request) {
-  const startTime = Date.now();
-  const requestId = `projects_${Date.now()}`;
-
-  logger.info({ requestId, method: 'GET', endpoint: '/api/projects' }, 'Projects fetch started');
-
+async function getHandler(request) {
   try {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') === 'true';
@@ -36,14 +31,6 @@ export async function GET(request) {
       images: Array.isArray(project.images) ? project.images : []
     }));
 
-    const duration = Date.now() - startTime;
-    logger.info({
-      requestId,
-      duration: `${duration}ms`,
-      projectCount: formattedProjects.length,
-      activeOnly
-    }, 'Projects fetch completed');
-
     return NextResponse.json({
       success: true,
       projects: formattedProjects,
@@ -52,12 +39,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    const duration = Date.now() - startTime;
-    logger.error({
-      requestId,
-      duration: `${duration}ms`,
-      error: { message: error.message, stack: error.stack }
-    }, 'Projects fetch failed');
+    logError(request, error, { operation: 'fetch_projects' });
 
     return NextResponse.json({
       success: false,
@@ -67,3 +49,5 @@ export async function GET(request) {
     }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);

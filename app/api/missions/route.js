@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getMissions, normalizeMission, DEFAULT_LOCALE } from '@/lib/missions';
 import { prisma } from '@/lib/prisma';
+import { withLogging, logError } from '@/lib/logger';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
@@ -41,7 +42,7 @@ function ensureLocalizedList(value, locale = DEFAULT_LOCALE) {
   return [];
 }
 
-export async function GET(request) {
+async function getHandler(request) {
   const { searchParams } = new URL(request.url);
   const page = Number.parseInt(searchParams.get('page') || '1', 10);
   const pageSize = Number.parseInt(searchParams.get('pageSize') || '6', 10);
@@ -60,7 +61,7 @@ export async function GET(request) {
       headers: CACHE_HEADERS,
     });
   } catch (error) {
-    console.error('Failed to fetch missions', error);
+    logError(request, error, { operation: 'fetch_missions' });
     return NextResponse.json(
       {
         error: 'Unable to fetch missions',
@@ -73,7 +74,9 @@ export async function GET(request) {
   }
 }
 
-export async function POST(request) {
+export const GET = withLogging(getHandler);
+
+async function postHandler(request) {
   if (!authorize(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
@@ -118,7 +121,7 @@ export async function POST(request) {
       status: 201,
     });
   } catch (error) {
-    console.error('Failed to create mission', error);
+    logError(request, error, { operation: 'create_mission', slug: body.slug });
     return NextResponse.json(
       { error: 'Unable to create mission' },
       {
@@ -127,3 +130,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withLogging(postHandler);

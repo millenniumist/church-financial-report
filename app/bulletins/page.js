@@ -148,34 +148,7 @@ export default async function BulletinsPage({ searchParams }) {
         </div>
       </section>
 
-      <section className="pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="p-10 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl">
-            <div className="grid md:grid-cols-2 gap-8">
-              <Feature
-                title="ไฟล์คุณภาพสูง"
-                subtitle="High-quality PDF"
-                body="ดูได้คมชัดบนทุกอุปกรณ์ หรือดาวน์โหลดไปพิมพ์สำหรับกลุ่มเล็ก/สมาชิกที่บ้าน"
-              />
-              <Feature
-                title="ระบบสำรอง"
-                subtitle="Redundant storage"
-                body="ไฟล์ถูกเก็บไว้ทั้งบน Raspberry Pi และ Cloud จึงมั่นใจว่าเข้าถึงได้เสมอ"
-              />
-              <Feature
-                title="อัปเดตทุกสัปดาห์"
-                subtitle="Weekly cadence"
-                body="ทีมงานเผยแพร่สูจิบัตรทุกเช้าวันอาทิตย์ พร้อมกิจกรรมและประกาศล่าสุด"
-              />
-              <Feature
-                title="เข้าถึงง่าย"
-                subtitle="One tap access"
-                body="ลิงก์ดู / ดาวน์โหลดอยู่ในที่เดียว ไม่ว่าจะบนมือถือหรือคอมพิวเตอร์"
-              />
-            </div>
-          </Card>
-        </div>
-      </section>
+
     </main>
   );
 }

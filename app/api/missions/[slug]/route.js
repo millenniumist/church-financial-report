@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { normalizeMission, DEFAULT_LOCALE } from '@/lib/missions';
+import { withLogging, logError } from '@/lib/logger';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
@@ -41,7 +42,7 @@ function ensureLocalizedList(value, locale = DEFAULT_LOCALE) {
   return [];
 }
 
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   const { slug } = params;
   const { searchParams } = new URL(request.url);
   const locale = searchParams.get('locale') || DEFAULT_LOCALE;
@@ -59,7 +60,7 @@ export async function GET(request, { params }) {
       headers: CACHE_HEADERS,
     });
   } catch (error) {
-    console.error('Failed to load mission', error);
+    logError(request, error, { operation: 'get_mission', slug });
     return NextResponse.json(
       { error: 'Unable to load mission' },
       { status: 500, headers: CACHE_HEADERS }
@@ -67,7 +68,9 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export const GET = withLogging(getHandler);
+
+async function putHandler(request, { params }) {
   if (!authorize(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
@@ -126,7 +129,7 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(normalizeMission(mission, locale));
   } catch (error) {
-    console.error('Failed to update mission', error);
+    logError(request, error, { operation: 'update_mission', slug });
     return NextResponse.json(
       { error: 'Unable to update mission' },
       { status: 500 }
@@ -134,11 +137,13 @@ export async function PUT(request, { params }) {
   }
 }
 
+export const PUT = withLogging(putHandler);
+
 export async function PATCH(request, context) {
   return PUT(request, context);
 }
 
-export async function DELETE(request, { params }) {
+async function deleteHandler(request, { params }) {
   if (!authorize(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
@@ -152,10 +157,12 @@ export async function DELETE(request, { params }) {
     await prisma.mission.delete({ where: { slug } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to delete mission', error);
+    logError(request, error, { operation: 'delete_mission', slug });
     return NextResponse.json(
       { error: 'Unable to delete mission' },
       { status: 500 }
     );
   }
 }
+
+export const DELETE = withLogging(deleteHandler);

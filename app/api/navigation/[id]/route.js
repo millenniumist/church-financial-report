@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withLogging, logError } from '@/lib/logger';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
@@ -29,7 +30,7 @@ function ensureLocalized(value, locale = 'th') {
   return null;
 }
 
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   const { id } = params;
   const { searchParams } = new URL(request.url);
   const locale = searchParams.get('locale') || 'th';
@@ -57,7 +58,7 @@ export async function GET(request, { params }) {
       { headers: CACHE_HEADERS }
     );
   } catch (error) {
-    console.error('Failed to load navigation item', error);
+    logError(request, error, { operation: 'get_navigation_item', item_id: id });
     return NextResponse.json(
       { error: 'Unable to load navigation item' },
       { status: 500, headers: CACHE_HEADERS }
@@ -65,7 +66,7 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+async function putHandler(request, { params }) {
   if (!authorize(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -93,16 +94,16 @@ export async function PUT(request, { params }) {
     const item = await prisma.navigationItem.update({ where: { id }, data: updates });
     return NextResponse.json({ item });
   } catch (error) {
-    console.error('Failed to update navigation item', error);
+    logError(request, error, { operation: 'update_navigation_item', item_id: id });
     return NextResponse.json({ error: 'Unable to update navigation item' }, { status: 500 });
   }
 }
 
-export async function PATCH(request, context) {
-  return PUT(request, context);
+async function patchHandler(request, context) {
+  return putHandler(request, context);
 }
 
-export async function DELETE(request, { params }) {
+async function deleteHandler(request, { params }) {
   if (!authorize(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -113,7 +114,12 @@ export async function DELETE(request, { params }) {
     await prisma.navigationItem.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to delete navigation item', error);
+    logError(request, error, { operation: 'delete_navigation_item', item_id: id });
     return NextResponse.json({ error: 'Unable to delete navigation item' }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PUT = withLogging(putHandler);
+export const PATCH = withLogging(patchHandler);
+export const DELETE = withLogging(deleteHandler);

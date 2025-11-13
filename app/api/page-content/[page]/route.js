@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPageContent, normalizeContent, DEFAULT_LOCALE } from '@/lib/page-content';
 import { prisma } from '@/lib/prisma';
+import { withLogging, logError } from '@/lib/logger';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
@@ -19,7 +20,7 @@ function authorize(request) {
   return false;
 }
 
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   const { page } = params;
   const { searchParams } = new URL(request.url);
   const locale = searchParams.get('locale') || 'th';
@@ -50,7 +51,7 @@ export async function GET(request, { params }) {
       }
     );
   } catch (error) {
-    console.error('Failed to fetch page content', error);
+    logError(request, error, { operation: 'fetch_page_content', page });
     return NextResponse.json(
       { error: 'Unable to load page content' },
       {
@@ -61,7 +62,7 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function POST(request, { params }) {
+async function postHandler(request, { params }) {
   if (!authorize(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -92,7 +93,10 @@ export async function POST(request, { params }) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Failed to create page content', error);
+    logError(request, error, { operation: 'create_page_content', page, section: body.section });
     return NextResponse.json({ error: 'Unable to create page content' }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);
+export const POST = withLogging(postHandler);

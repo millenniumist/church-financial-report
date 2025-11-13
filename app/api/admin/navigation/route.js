@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
 function normalizeLabel(label = {}) {
   if (typeof label === 'string') {
@@ -27,21 +28,26 @@ function toResponse(item) {
   };
 }
 
-export async function GET() {
+async function getHandler() {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const items = await prisma.navigationItem.findMany({
-    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-  });
+  try {
+    const items = await prisma.navigationItem.findMany({
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
 
-  return NextResponse.json({
-    items: items.map(toResponse),
-  });
+    return NextResponse.json({
+      items: items.map(toResponse),
+    });
+  } catch (error) {
+    logError(request, error, { operation: 'admin_fetch_navigation' });
+    return NextResponse.json({ error: 'Failed to fetch navigation items' }, { status: 500 });
+  }
 }
 
-export async function POST(request) {
+async function postHandler(request) {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -64,7 +70,10 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, item: toResponse(item) }, { status: 201 });
   } catch (error) {
-    console.error('Failed to create navigation item', error);
+    logError(request, error, { operation: 'admin_create_navigation' });
     return NextResponse.json({ error: 'Failed to create navigation item' }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);
+export const POST = withLogging(postHandler);

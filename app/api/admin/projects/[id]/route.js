@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
 // GET single project
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +21,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({ project });
   } catch (error) {
-    console.error('Error fetching project:', error);
+    logError(request, error, { operation: 'admin_get_project', project_id: params?.id });
     return NextResponse.json(
       { error: 'Failed to fetch project' },
       { status: 500 }
@@ -29,7 +30,7 @@ export async function GET(request, { params }) {
 }
 
 // UPDATE project
-export async function PATCH(request, { params }) {
+async function patchHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -54,7 +55,7 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({ success: true, project });
   } catch (error) {
-    console.error('Error updating project:', error);
+    logError(request, error, { operation: 'admin_update_project', project_id: params?.id });
     return NextResponse.json(
       { error: 'Failed to update project' },
       { status: 500 }
@@ -63,7 +64,7 @@ export async function PATCH(request, { params }) {
 }
 
 // DELETE project
-export async function DELETE(request, { params }) {
+async function deleteHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -77,10 +78,14 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    logError(request, error, { operation: 'admin_delete_project', project_id: params?.id });
     return NextResponse.json(
       { error: 'Failed to delete project' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PATCH = withLogging(patchHandler);
+export const DELETE = withLogging(deleteHandler);

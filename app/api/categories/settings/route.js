@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withLogging, logError } from '@/lib/logger';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'no-store, must-revalidate',
 };
 
 // GET - Retrieve category settings
-export async function GET(request) {
+async function getHandler(request) {
   const { searchParams } = new URL(request.url);
   const yearParam = searchParams.get('year');
   const year = yearParam ? Number.parseInt(yearParam, 10) : new Date().getFullYear();
@@ -33,7 +34,7 @@ export async function GET(request) {
       }
     );
   } catch (error) {
-    console.error('Failed to load category settings', error);
+    logError(request, error, { operation: 'load_category_settings', year });
     return NextResponse.json(
       { error: 'Unable to load category settings' },
       {
@@ -45,7 +46,7 @@ export async function GET(request) {
 }
 
 // POST - Save category settings
-export async function POST(request) {
+async function postHandler(request) {
   try {
     const body = await request.json();
     const year = body?.year ? Number.parseInt(body.year, 10) : new Date().getFullYear();
@@ -81,7 +82,7 @@ export async function POST(request) {
       }
     );
   } catch (error) {
-    console.error('Failed to save category settings', error);
+    logError(request, error, { operation: 'save_category_settings' });
     return NextResponse.json(
       { error: 'Unable to save category settings', details: error.message },
       {
@@ -93,7 +94,7 @@ export async function POST(request) {
 }
 
 // PUT - Update individual category
-export async function PUT(request) {
+async function putHandler(request) {
   try {
     const body = await request.json();
     const { code, visible, aggregateInto } = body;
@@ -125,7 +126,7 @@ export async function PUT(request) {
       }
     );
   } catch (error) {
-    console.error('Failed to update category', error);
+    logError(request, error, { operation: 'update_category', category_code: body?.code });
     return NextResponse.json(
       { error: 'Unable to update category', details: error.message },
       {
@@ -137,7 +138,7 @@ export async function PUT(request) {
 }
 
 // DELETE - Reset category settings
-export async function DELETE(request) {
+async function deleteHandler(request) {
   const { searchParams } = new URL(request.url);
   const yearParam = searchParams.get('year');
   const year = yearParam ? Number.parseInt(yearParam, 10) : new Date().getFullYear();
@@ -170,7 +171,7 @@ export async function DELETE(request) {
       );
     }
 
-    console.error('Failed to reset category settings', error);
+    logError(request, error, { operation: 'reset_category_settings', year });
     return NextResponse.json(
       { error: 'Unable to reset category settings', details: error.message },
       {
@@ -180,3 +181,8 @@ export async function DELETE(request) {
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const POST = withLogging(postHandler);
+export const PUT = withLogging(putHandler);
+export const DELETE = withLogging(deleteHandler);

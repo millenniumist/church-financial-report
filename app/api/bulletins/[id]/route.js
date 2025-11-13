@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getBulletinById, checkLocalFile, getLocalFileStream } from '@/lib/bulletins';
+import { withLogging, logError } from '@/lib/logger';
 
 // GET - Serve bulletin file (with fallback to Cloudinary)
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   try {
     const bulletin = await getBulletinById(params.id);
 
@@ -12,11 +13,11 @@ export async function GET(request, { params }) {
 
     // Try local file first (PRIMARY)
     const hasLocalFile = await checkLocalFile(bulletin.localPath);
-    
+
     if (hasLocalFile) {
       try {
         const { stream, size } = await getLocalFileStream(bulletin.localPath);
-        
+
         // Return file stream
         return new NextResponse(stream, {
           headers: {
@@ -27,14 +28,13 @@ export async function GET(request, { params }) {
           },
         });
       } catch (error) {
-        console.error('Error reading local file:', error);
+        logError(request, error, { operation: 'read_local_bulletin', bulletin_id: params.id });
         // Fall through to Cloudinary backup
       }
     }
 
     // Fallback to Cloudinary (BACKUP)
     if (bulletin.cloudinaryUrl) {
-      console.log('Local file not available, redirecting to Cloudinary backup');
       return NextResponse.redirect(bulletin.cloudinaryUrl);
     }
 
@@ -44,10 +44,12 @@ export async function GET(request, { params }) {
       { status: 404 }
     );
   } catch (error) {
-    console.error('Error serving bulletin:', error);
+    logError(request, error, { operation: 'serve_bulletin', bulletin_id: params.id });
     return NextResponse.json(
       { error: 'Failed to serve bulletin', details: error.message },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);

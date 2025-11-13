@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { getBulletinById, updateBulletin, deleteBulletin } from '@/lib/bulletins';
+import { withLogging, logError } from '@/lib/logger';
 
 // GET - Get single bulletin
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,7 +18,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json(bulletin);
   } catch (error) {
-    console.error('Error fetching bulletin:', error);
+    logError(request, error, { operation: 'admin_get_bulletin', bulletin_id: params.id });
     return NextResponse.json(
       { error: 'Failed to fetch bulletin', details: error.message },
       { status: 500 }
@@ -26,7 +27,7 @@ export async function GET(request, { params }) {
 }
 
 // PATCH - Update bulletin
-export async function PATCH(request, { params }) {
+async function patchHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,7 +58,7 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json(bulletin);
   } catch (error) {
-    console.error('Error updating bulletin:', error);
+    logError(request, error, { operation: 'admin_update_bulletin', bulletin_id: params.id });
     return NextResponse.json(
       { error: 'Failed to update bulletin', details: error.message },
       { status: 500 }
@@ -66,7 +67,7 @@ export async function PATCH(request, { params }) {
 }
 
 // DELETE - Delete bulletin
-export async function DELETE(request, { params }) {
+async function deleteHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,10 +77,14 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting bulletin:', error);
+    logError(request, error, { operation: 'admin_delete_bulletin', bulletin_id: params.id });
     return NextResponse.json(
       { error: 'Failed to delete bulletin', details: error.message },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PATCH = withLogging(patchHandler);
+export const DELETE = withLogging(deleteHandler);

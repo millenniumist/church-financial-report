@@ -184,7 +184,7 @@ info "Target host: $username@$TARGET_HOST"
 echo ""
 
 # Step 0: Test SSH connectivity
-echo -e "${YELLOW}[0/8] Testing SSH connectivity...${NC}"
+echo -e "${YELLOW}[0/13] Testing SSH connectivity...${NC}"
 if ! ssh_cmd "echo 'SSH connection successful'" >/dev/null 2>&1; then
   error "✗ Cannot connect to $username@$TARGET_HOST via $CONNECTION_METHOD. Check network, credentials, and SSH access."
 fi
@@ -192,7 +192,7 @@ success "✓ SSH connection established via $CONNECTION_METHOD"
 echo ""
 
 # Step 1: Prepare production environment file
-echo -e "${YELLOW}[1/8] Preparing production environment...${NC}"
+echo -e "${YELLOW}[1/13] Preparing production environment...${NC}"
 if [ ! -d "$APP_DIR" ]; then
   error "✗ App directory not found at ${APP_DIR}. Make sure you're running from the monorepo."
 fi
@@ -231,7 +231,7 @@ success "✓ Environment prepared"
 echo ""
 
 # Step 2: Verify deployment files locally
-echo -e "${YELLOW}[2/8] Verifying local deployment files...${NC}"
+echo -e "${YELLOW}[2/13] Verifying local deployment files...${NC}"
 [ -f "$APP_DIR/Dockerfile" ] || error "✗ Missing ${APP_DIR}/Dockerfile"
 [ -f "$COMPOSE_FILE" ] || error "✗ Missing ${COMPOSE_FILE}"
 if [ ! -f "$APP_DIR/privatekey-gsheet.json" ]; then
@@ -241,7 +241,7 @@ success "✓ Local deployment files present"
 echo ""
 
 # Step 3: Build Docker image locally on Mac M2
-echo -e "${YELLOW}[3/9] Building Docker image locally on Mac M2 (ARM64)...${NC}"
+echo -e "${YELLOW}[3/13] Building Docker image locally on Mac M2 (ARM64)...${NC}"
 IMAGE_NAME="nextjs-app"
 IMAGE_TAG="latest"
 IMAGE_TAR="nextjs-app-arm64.tar"
@@ -251,24 +251,43 @@ cd "$APP_DIR"
 docker build --platform linux/arm64 -t "${IMAGE_NAME}:${IMAGE_TAG}" -f Dockerfile . || error "✗ Failed to build Docker image"
 success "✓ Docker image built: ${IMAGE_NAME}:${IMAGE_TAG}"
 
-info "Saving image to tar file..."
-docker save "${IMAGE_NAME}:${IMAGE_TAG}" -o "/tmp/${IMAGE_TAR}" || error "✗ Failed to save Docker image"
-IMAGE_SIZE=$(du -h "/tmp/${IMAGE_TAR}" | cut -f1)
-success "✓ Image saved to /tmp/${IMAGE_TAR} (${IMAGE_SIZE})"
+# Get image ID for comparison
+LOCAL_IMAGE_ID=$(docker images --no-trunc --quiet "${IMAGE_NAME}:${IMAGE_TAG}")
+info "Local image ID: ${LOCAL_IMAGE_ID:0:12}..."
+
+# Check if remote has the same image
+REMOTE_IMAGE_ID=$(ssh_cmd "cat $REMOTE_DEPLOY_DIR/.image_id 2>/dev/null || echo ''")
+
+if [ "$LOCAL_IMAGE_ID" = "$REMOTE_IMAGE_ID" ]; then
+  success "✓ Remote already has this image, skipping transfer"
+  SKIP_IMAGE_TRANSFER=true
+else
+  info "Image changed, will transfer to remote"
+  SKIP_IMAGE_TRANSFER=false
+
+  info "Saving image to tar file..."
+  docker save "${IMAGE_NAME}:${IMAGE_TAG}" -o "/tmp/${IMAGE_TAR}" || error "✗ Failed to save Docker image"
+  IMAGE_SIZE=$(du -h "/tmp/${IMAGE_TAR}" | cut -f1)
+  success "✓ Image saved to /tmp/${IMAGE_TAR} (${IMAGE_SIZE})"
+fi
 cd "$LOCAL_DIR"
 echo ""
 
 # Step 4: Create remote deployment directory
-echo -e "${YELLOW}[4/9] Creating remote deployment directory...${NC}"
+echo -e "${YELLOW}[4/13] Creating remote deployment directory...${NC}"
 ssh_cmd "mkdir -p $REMOTE_DEPLOY_DIR $REMOTE_APP_DIR $REMOTE_CLOUDFLARE_DIR" || error "✗ Failed to create remote directories"
 success "✓ Remote directories created"
 echo ""
 
 # Step 5: Transfer files to remote host
-echo -e "${YELLOW}[5/9] Transferring files to remote host...${NC}"
+echo -e "${YELLOW}[5/13] Transferring files to remote host...${NC}"
 
-info "Transferring Docker image (${IMAGE_SIZE})..."
-scp_cmd "/tmp/${IMAGE_TAR}" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/" || error "✗ Failed to transfer Docker image"
+if [ "$SKIP_IMAGE_TRANSFER" = false ]; then
+  info "Transferring Docker image (${IMAGE_SIZE})..."
+  scp_cmd "/tmp/${IMAGE_TAR}" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/" || error "✗ Failed to transfer Docker image"
+else
+  info "Skipping Docker image transfer (unchanged)"
+fi
 
 info "Copying docker-compose file..."
 scp_cmd "$COMPOSE_FILE" "$username@$TARGET_HOST:$REMOTE_DEPLOY_DIR/" || error "✗ Failed to copy docker-compose file"
@@ -283,12 +302,14 @@ success "✓ Files transferred to remote host"
 echo ""
 
 # Clean up local tar file
-rm -f "/tmp/${IMAGE_TAR}"
-info "Cleaned up local image file"
+if [ "$SKIP_IMAGE_TRANSFER" = false ]; then
+  rm -f "/tmp/${IMAGE_TAR}"
+  info "Cleaned up local image file"
+fi
 echo ""
 
 # Step 6: Setup PostgreSQL database (if needed)
-echo -e "${YELLOW}[6/12] Setting up PostgreSQL database...${NC}"
+echo -e "${YELLOW}[6/13] Setting up PostgreSQL database...${NC}"
 
 # Read database config from .env
 DB_NAME="${DB_NAME:-cc_financial}"
@@ -340,7 +361,7 @@ PSQL
 echo "✓ Database and user configured"
 
 # Update pg_hba.conf to allow password authentication
-PG_VERSION=\$(psql --version | grep -oP '(?<=PostgreSQL )\d+')
+PG_VERSION=\$(psql --version | sed -n 's/.*PostgreSQL \([0-9][0-9]*\).*/\1/p')
 PG_HBA="/etc/postgresql/\$PG_VERSION/main/pg_hba.conf"
 
 if [ -f "\$PG_HBA" ]; then
@@ -368,7 +389,7 @@ success "✓ PostgreSQL database ready"
 echo ""
 
 # Step 7: Check remote requirements and load environment
-echo -e "${YELLOW}[7/12] Checking remote environment...${NC}"
+echo -e "${YELLOW}[7/13] Checking remote environment...${NC}"
 ssh_cmd bash <<'REMOTE_CHECK'
 set -e
 
@@ -404,25 +425,29 @@ REMOTE_CHECK
 success "✓ Remote environment verified"
 echo ""
 
-# Step 7: Load Docker image and start container on remote host
-echo -e "${YELLOW}[8/12] Loading Docker image and starting container on remote host...${NC}"
+# Step 8: Load Docker image and start container on remote host
+echo -e "${YELLOW}[8/13] Loading Docker image and starting container on remote host...${NC}"
 ssh_cmd bash <<REMOTE_DEPLOY
 set -e
 
 cd $REMOTE_DEPLOY_DIR
 
-# Load Docker image from tar file
-echo "Loading Docker image from tar file..."
-docker load -i ${IMAGE_TAR} || { echo "✗ Failed to load Docker image"; exit 1; }
-echo "✓ Docker image loaded successfully"
+# Load Docker image from tar file only if transferred
+if [ -f ${IMAGE_TAR} ]; then
+  echo "Loading Docker image from tar file..."
+  docker load -i ${IMAGE_TAR} || { echo "✗ Failed to load Docker image"; exit 1; }
+  echo "✓ Docker image loaded successfully"
 
-# Remove old images to save space
-echo "Cleaning up old images..."
-docker image prune -f >/dev/null 2>&1 || true
+  # Remove old images to save space
+  echo "Cleaning up old images..."
+  docker image prune -f >/dev/null 2>&1 || true
 
-# Remove the tar file to save space
-rm -f ${IMAGE_TAR}
-echo "✓ Cleaned up tar file"
+  # Remove the tar file to save space
+  rm -f ${IMAGE_TAR}
+  echo "✓ Cleaned up tar file"
+else
+  echo "Using existing Docker image (no transfer needed)"
+fi
 
 # Load environment variables from .env.production
 if [ -f app/.env.production ]; then
@@ -452,13 +477,17 @@ fi
 \$DOCKER_COMPOSE_CMD -f docker-compose.selfhost.yml up -d nextjs-app
 
 echo "✓ Container started from pre-built image"
+
+# Save image ID for future comparison
+echo "${LOCAL_IMAGE_ID}" > .image_id
+echo "✓ Saved image ID for future deployments"
 REMOTE_DEPLOY
 
 success "✓ nextjs-app container running on remote host"
 echo ""
 
 # Step 8.3: Restart Filebeat to pick up new container logs
-echo -e "${YELLOW}[8.3/12] Restarting Filebeat for new container...${NC}"
+echo -e "${YELLOW}[8.3/13] Restarting Filebeat for new container...${NC}"
 ssh_cmd bash <<'RESTART_FILEBEAT'
 if docker ps -a --format '{{.Names}}' | grep -q '^filebeat$'; then
   echo "Restarting Filebeat to detect new container..."
@@ -477,7 +506,7 @@ success "✓ Filebeat restart complete"
 echo ""
 
 # Step 8.5: Run database migrations
-echo -e "${YELLOW}[8.5/12] Running database migrations...${NC}"
+echo -e "${YELLOW}[8.5/13] Running database migrations...${NC}"
 sleep 3  # Wait for container to be fully ready
 
 # Run migrations using Prisma
@@ -507,7 +536,7 @@ fi
 echo ""
 
 # Step 9: Health check
-echo -e "${YELLOW}[9/12] Running health checks...${NC}"
+echo -e "${YELLOW}[9/13] Running health checks...${NC}"
 sleep 2
 
 # Check if container is running
@@ -526,8 +555,8 @@ else
 fi
 echo ""
 
-# Step 9: Setup and start Cloudflare tunnel with auto-start on remote host
-echo -e "${YELLOW}[10/12] Setting up Cloudflare tunnel with auto-start on remote host...${NC}"
+# Step 10: Setup and start Cloudflare tunnel with auto-start on remote host
+echo -e "${YELLOW}[10/13] Setting up Cloudflare tunnel with auto-start on remote host...${NC}"
 ssh_cmd bash <<REMOTE_TUNNEL
 set -e
 
@@ -634,9 +663,9 @@ REMOTE_TUNNEL
 success "✓ Cloudflare tunnel running with auto-start enabled on remote host"
 echo ""
 
-# Step 10: Setup Health Monitor with MQTT (if enabled)
+# Step 11: Setup Health Monitor with MQTT (if enabled)
 if [ "${ENABLE_HEALTH_MONITOR:-true}" = "true" ] && [ -f "$LOCAL_DIR/health-monitor.js" ]; then
-  echo -e "${YELLOW}[11/12] Setting up health monitoring with MQTT...${NC}"
+  echo -e "${YELLOW}[11/13] Setting up health monitoring with MQTT...${NC}"
 
   # Check if Mosquitto is installed
   if ! ssh_cmd "command -v mosquitto" >/dev/null 2>&1; then
@@ -747,7 +776,7 @@ INSTALL_SERVICE
   echo ""
 fi
 
-# Step 11: Setup Tailscale for remote access (optional)
+# Step 12: Setup Tailscale for remote access (optional)
 if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
   echo -e "${YELLOW}[12/13] Setting up Tailscale for remote MQTT access...${NC}"
 
@@ -780,7 +809,7 @@ if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
   echo ""
 fi
 
-# Step 12: Setup Elasticsearch for centralized logging (optional)
+# Step 13: Setup Elasticsearch for centralized logging (optional)
 if [ "${ENABLE_ELASTICSEARCH:-false}" = "true" ]; then
   echo -e "${YELLOW}[13/13] Setting up Elasticsearch for centralized logging...${NC}"
 

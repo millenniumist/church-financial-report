@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createAdminSession } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
-export async function POST(request) {
+async function postHandler(request) {
   try {
     const { username, password } = await request.json();
 
@@ -23,10 +24,12 @@ export async function POST(request) {
       { status: 401 }
     );
   } catch (error) {
-    console.error('Login error:', error);
+    logError(request, error, { operation: 'admin_login' });
     return NextResponse.json(
       { success: false, error: 'An error occurred' },
       { status: 500 }
     );
   }
 }
+
+export const POST = withLogging(postHandler);

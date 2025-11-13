@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { v2 as cloudinary } from 'cloudinary';
+import { withLogging, logError } from '@/lib/logger';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -9,7 +10,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-export async function POST(request) {
+async function postHandler(request) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -52,13 +53,15 @@ export async function POST(request) {
 
     return NextResponse.json({ url: result.secure_url });
   } catch (error) {
-    console.error('Upload error:', error);
+    logError(request, error, { operation: 'admin_upload_image' });
     return NextResponse.json(
       { error: 'Failed to upload image', details: error.message },
       { status: 500 }
     );
   }
 }
+
+export const POST = withLogging(postHandler);
 
 export const config = {
   api: {

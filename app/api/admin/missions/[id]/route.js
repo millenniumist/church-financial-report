@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
 // GET single mission
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +21,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({ mission });
   } catch (error) {
-    console.error('Error fetching mission:', error);
+    logError(request, error, { operation: 'admin_get_mission', mission_id: params?.id });
     return NextResponse.json(
       { error: 'Failed to fetch mission' },
       { status: 500 }
@@ -29,7 +30,7 @@ export async function GET(request, { params }) {
 }
 
 // UPDATE mission
-export async function PATCH(request, { params }) {
+async function patchHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -60,7 +61,7 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({ success: true, mission });
   } catch (error) {
-    console.error('Error updating mission:', error);
+    logError(request, error, { operation: 'admin_update_mission', mission_id: params?.id });
     return NextResponse.json(
       { error: 'Failed to update mission', details: error.message },
       { status: 500 }
@@ -69,7 +70,7 @@ export async function PATCH(request, { params }) {
 }
 
 // DELETE mission
-export async function DELETE(request, { params }) {
+async function deleteHandler(request, { params }) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -83,10 +84,14 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting mission:', error);
+    logError(request, error, { operation: 'admin_delete_mission', mission_id: params?.id });
     return NextResponse.json(
       { error: 'Failed to delete mission' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PATCH = withLogging(patchHandler);
+export const DELETE = withLogging(deleteHandler);

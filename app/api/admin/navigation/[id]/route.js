@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
 function normalizeLabel(label = {}) {
   if (typeof label === 'string') {
@@ -27,22 +28,28 @@ function toResponse(item) {
   };
 }
 
-export async function GET(request, { params }) {
+async function getHandler(request, { params }) {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { id } = await params;
-  const item = await prisma.navigationItem.findUnique({ where: { id } });
 
-  if (!item) {
-    return NextResponse.json({ error: 'Navigation item not found' }, { status: 404 });
+  try {
+    const item = await prisma.navigationItem.findUnique({ where: { id } });
+
+    if (!item) {
+      return NextResponse.json({ error: 'Navigation item not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ item: toResponse(item) });
+  } catch (error) {
+    logError(request, error, { operation: 'admin_get_navigation', nav_id: id });
+    return NextResponse.json({ error: 'Failed to fetch navigation item' }, { status: 500 });
   }
-
-  return NextResponse.json({ item: toResponse(item) });
 }
 
-export async function PATCH(request, { params }) {
+async function patchHandler(request, { params }) {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -68,12 +75,12 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({ success: true, item: toResponse(item) });
   } catch (error) {
-    console.error('Failed to update navigation item', error);
+    logError(request, error, { operation: 'admin_update_navigation', nav_id: id });
     return NextResponse.json({ error: 'Failed to update navigation item' }, { status: 500 });
   }
 }
 
-export async function DELETE(request, { params }) {
+async function deleteHandler(request, { params }) {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -84,7 +91,11 @@ export async function DELETE(request, { params }) {
     await prisma.navigationItem.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to delete navigation item', error);
+    logError(request, error, { operation: 'admin_delete_navigation', nav_id: id });
     return NextResponse.json({ error: 'Failed to delete navigation item' }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PATCH = withLogging(patchHandler);
+export const DELETE = withLogging(deleteHandler);

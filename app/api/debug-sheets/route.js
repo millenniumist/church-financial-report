@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 import { fetchSheetData } from '@/lib/google-sheets';
+import { withLogging, logError } from '@/lib/logger';
 
 function verifyAuth(request) {
   const apiKey = request.headers.get('x-api-key');
@@ -11,7 +11,7 @@ function verifyAuth(request) {
   return apiKey === expectedKey || authHeader === `Bearer ${expectedKey}`;
 }
 
-export async function GET(request) {
+async function getHandler(request) {
   try {
     if (!verifyAuth(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,8 +19,6 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const sheetName = searchParams.get('sheet') || 'FutureProject';
-
-    logger.info({ sheetName }, 'Fetching sheet data for debugging');
 
     const rows = await fetchSheetData(sheetName);
 
@@ -34,8 +32,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    logger.error({ error: error.message, stack: error.stack }, 'Debug sheets failed');
-
+    logError(request, error, { operation: 'debug_sheets', sheet_name: request.url });
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -43,3 +40,5 @@ export async function GET(request) {
     }, { status: 500 });
   }
 }
+
+export const GET = withLogging(getHandler);

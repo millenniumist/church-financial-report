@@ -4,6 +4,7 @@ import { getBulletins, createBulletin, ensureBulletinsDir, formatBulletinFilenam
 import { v2 as cloudinary } from 'cloudinary';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { withLogging, logError } from '@/lib/logger';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -15,7 +16,7 @@ cloudinary.config({
 const BULLETINS_DIR = process.env.BULLETINS_STORAGE_PATH || '/home/mill/hosting/bulletins';
 
 // GET - List all bulletins
-export async function GET(request) {
+async function getHandler(request) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,7 +31,7 @@ export async function GET(request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error fetching bulletins:', error);
+    logError(request, error, { operation: 'admin_fetch_bulletins' });
     return NextResponse.json(
       { error: 'Failed to fetch bulletins', details: error.message },
       { status: 500 }
@@ -39,7 +40,7 @@ export async function GET(request) {
 }
 
 // POST - Upload new bulletin
-export async function POST(request) {
+async function postHandler(request) {
   try {
     if (!(await verifyAdminAuth())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -83,7 +84,6 @@ export async function POST(request) {
 
     // Save to local storage (PRIMARY)
     await fs.writeFile(localPath, buffer);
-    console.log('✓ Saved to local storage:', localPath);
 
     // Upload to Cloudinary as backup (SECONDARY)
     let cloudinaryUrl = null;
@@ -106,25 +106,24 @@ export async function POST(request) {
             .end(buffer);
         });
         cloudinaryUrl = result.secure_url;
-        console.log('✓ Backed up to Cloudinary:', cloudinaryUrl);
       } catch (error) {
-        console.error('⚠ Cloudinary backup failed (continuing with local only):', error);
         // Continue even if Cloudinary fails - we have local storage
+        logError(request, error, { operation: 'cloudinary_backup_bulletin', filename });
       }
     }
 
     // Create database record
     const bulletin = await createBulletin({
       title: {
-        th: titleTh || `สูจิบัตร ${new Date(date).toLocaleDateString('th-TH', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
+        th: titleTh || `สูจิบัตร ${new Date(date).toLocaleDateString('th-TH', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
         })}`,
-        en: titleEn || `Bulletin ${new Date(date).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
+        en: titleEn || `Bulletin ${new Date(date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
         })}`
       },
       date: new Date(date),
@@ -134,8 +133,8 @@ export async function POST(request) {
       isActive: true
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       bulletin,
       storage: {
         local: true,
@@ -143,10 +142,13 @@ export async function POST(request) {
       }
     });
   } catch (error) {
-    console.error('Error uploading bulletin:', error);
+    logError(request, error, { operation: 'admin_upload_bulletin' });
     return NextResponse.json(
       { error: 'Failed to upload bulletin', details: error.message },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const POST = withLogging(postHandler);

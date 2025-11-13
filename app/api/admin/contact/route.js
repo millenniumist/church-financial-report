@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/auth';
+import { withLogging, logError } from '@/lib/logger';
 
 function toAdminShape(record) {
   if (!record) {
@@ -114,16 +115,21 @@ function toPersistenceShape(body) {
   };
 }
 
-export async function GET() {
+async function getHandler() {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const record = await prisma.contactInfo.findFirst();
-  return NextResponse.json({ contact: toAdminShape(record) });
+  try {
+    const record = await prisma.contactInfo.findFirst();
+    return NextResponse.json({ contact: toAdminShape(record) });
+  } catch (error) {
+    logError(request, error, { operation: 'admin_get_contact' });
+    return NextResponse.json({ error: 'Failed to fetch contact info' }, { status: 500 });
+  }
 }
 
-export async function PATCH(request) {
+async function patchHandler(request) {
   if (!(await verifyAdminAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -143,10 +149,13 @@ export async function PATCH(request) {
       contact: toAdminShape(record),
     });
   } catch (error) {
-    console.error('Failed to update contact info', error);
+    logError(request, error, { operation: 'admin_update_contact' });
     return NextResponse.json(
       { error: 'Failed to update contact info' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getHandler);
+export const PATCH = withLogging(patchHandler);
