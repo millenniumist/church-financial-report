@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 import { getContactInfo } from '@/lib/contact-info';
 import StickyNav from '@/components/landing/StickyNav';
+import { logger } from '@/lib/logger';
 
 export const metadata = genMetadata({
   title: 'การนมัสการ',
@@ -14,7 +15,19 @@ export const metadata = genMetadata({
 export const dynamic = 'force-dynamic';
 
 export default async function WorshipPage() {
-  const contactInfo = await getContactInfo('th');
+  let contactInfo;
+  try {
+    contactInfo = await getContactInfo('th');
+    logger.info({ page: '/worship', event_type: 'page_render_success' }, 'Worship page rendered successfully');
+  } catch (error) {
+    logger.error({
+      page: '/worship',
+      event_type: 'page_render_error',
+      error_message: error.message,
+      error_stack: error.stack
+    }, 'Failed to load worship page');
+    throw error;
+  }
 
   if (!contactInfo) {
     return (

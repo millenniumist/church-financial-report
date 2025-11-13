@@ -34,6 +34,13 @@ APP_PORT="8358"
 # COMPOSE_PROJECT_NAME="hosting"
 
 # ============================================================================
+# Remote Host Configuration (for Filebeat/logging)
+# ============================================================================
+# If deploying to a remote Pi with Filebeat, set the SSH connection
+# REMOTE_HOST="mill@192.168.68.117"
+# REMOTE_HOSTING_DIR="/home/mill/hosting"
+
+# ============================================================================
 # Application Environment
 # ============================================================================
 # Node environment

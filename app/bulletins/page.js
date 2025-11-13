@@ -7,7 +7,9 @@ export const metadata = {
 };
 
 export default async function BulletinsPage({ searchParams }) {
-  const page = parseInt(searchParams.page) || 1;
+  // Await searchParams as required by Next.js 15
+  const params = await searchParams;
+  const page = parseInt(params.page) || 1;
   const { bulletins, pagination } = await getBulletins({ page, limit: 12, activeOnly: true });
 
   const formatDate = (dateString) => {

@@ -37,7 +37,7 @@ export async function GET(request, { params }) {
 
   try {
     const sections = section.length
-      ? await getPageContent({ page, sections, locale })
+      ? await getPageContent({ page, sections: section, locale })
       : await getPageContent({ page, locale });
 
     return NextResponse.json(

@@ -33,6 +33,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Clean any existing build artifacts
+RUN rm -rf .next
+
 # Build the application
 RUN npm run build
 
@@ -63,6 +66,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.
 # Copy built application
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy lib directory (for logger and other utilities)
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 
 # Copy Google Sheets credentials
 COPY --from=builder --chown=nextjs:nodejs /app/privatekey-gsheet.json ./privatekey-gsheet.json

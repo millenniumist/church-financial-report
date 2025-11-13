@@ -457,6 +457,25 @@ REMOTE_DEPLOY
 success "✓ nextjs-app container running on remote host"
 echo ""
 
+# Step 8.3: Restart Filebeat to pick up new container logs
+echo -e "${YELLOW}[8.3/12] Restarting Filebeat for new container...${NC}"
+ssh_cmd bash <<'RESTART_FILEBEAT'
+if docker ps -a --format '{{.Names}}' | grep -q '^filebeat$'; then
+  echo "Restarting Filebeat to detect new container..."
+  docker restart filebeat >/dev/null 2>&1 && sleep 3
+  if docker ps --format '{{.Names}}' | grep -q '^filebeat$'; then
+    echo "✓ Filebeat restarted and watching new container"
+  else
+    echo "⚠️  Filebeat not running after restart"
+  fi
+else
+  echo "⚠️  Filebeat container not found. Logs won't be collected."
+  echo "   To enable logging: cd /home/mill/hosting && docker-compose up -d filebeat"
+fi
+RESTART_FILEBEAT
+success "✓ Filebeat restart complete"
+echo ""
+
 # Step 8.5: Run database migrations
 echo -e "${YELLOW}[8.5/12] Running database migrations...${NC}"
 sleep 3  # Wait for container to be fully ready
