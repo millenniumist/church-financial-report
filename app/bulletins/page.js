@@ -1,209 +1,237 @@
-import { getBulletins } from '@/lib/bulletins';
 import Link from 'next/link';
+import { FileText, Download, Eye, HardDrive } from 'lucide-react';
+
+import { getBulletins } from '@/lib/bulletins';
+import StickyNav from '@/components/landing/StickyNav';
+import { Card } from '@/components/ui/card';
 
 export const metadata = {
   title: 'สูจิบัตร | คริสตจักรชลบุรี ภาค 7',
   description: 'สูจิบัตรประจำสัปดาห์ของคริสตจักรชลบุรี ภาค 7 / Weekly Church Bulletins',
 };
 
-export default async function BulletinsPage({ searchParams }) {
-  // Await searchParams as required by Next.js 15
-  const params = await searchParams;
-  const page = parseInt(params.page) || 1;
-  const { bulletins, pagination } = await getBulletins({ page, limit: 12, activeOnly: true });
+const BULLETINS_PER_PAGE = 12;
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return {
-      th: date.toLocaleDateString('th-TH', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        weekday: 'long'
-      }),
-      en: date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        weekday: 'long'
-      })
-    };
-  };
+export default async function BulletinsPage({ searchParams }) {
+  const params = await searchParams;
+  const page = Number.parseInt(params?.page ?? '1', 10) || 1;
+  const { bulletins, pagination } = await getBulletins({
+    page,
+    limit: BULLETINS_PER_PAGE,
+    activeOnly: true,
+  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            สูจิบัตรประจำสัปดาห์
-          </h1>
-          <p className="text-xl text-blue-100">
-            Weekly Church Bulletins
-          </p>
-          <p className="mt-4 text-blue-100">
-            ดาวน์โหลดสูจิบัตรประจำการนมัสการของเราได้ที่นี่
-          </p>
-        </div>
-      </div>
+    <main className="bg-white min-h-screen">
+      <StickyNav />
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-12">
-        {bulletins.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-lg shadow-md">
-            <div className="text-6xl mb-4">📄</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              ยังไม่มีสูจิบัตร
-            </h2>
-            <p className="text-gray-600">
-              No bulletins available yet
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50" />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center gap-3 px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+              <FileText className="w-4 h-4" />
+              Weekly Bulletins
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+              สูจิบัตรประจำสัปดาห์
+            </h1>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+              ดาวน์โหลดสูจิบัตรประจำการนมัสการของเราได้ทุกสัปดาห์ ทั้งภาษาไทยและภาษาอังกฤษ
             </p>
           </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bulletins.map((bulletin) => {
-                const dates = formatDate(bulletin.date);
-                const fileSize = bulletin.fileSize 
-                  ? (bulletin.fileSize / 1024 / 1024).toFixed(2) + ' MB'
-                  : 'N/A';
-
-                return (
-                  <div
-                    key={bulletin.id}
-                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
-                  >
-                    {/* PDF Icon Header */}
-                    <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 text-center">
-                      <div className="text-6xl mb-2">📄</div>
-                      <div className="text-white text-sm font-medium">PDF Document</div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-6">
-                      {/* Date Badge */}
-                      <div className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full mb-4">
-                        {dates.th.split(' ')[0]} {/* Day of week in Thai */}
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {bulletin.title.th}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {bulletin.title.en}
-                      </p>
-
-                      {/* Date */}
-                      <div className="text-gray-700 mb-4">
-                        <p className="font-medium">{dates.th}</p>
-                        <p className="text-sm text-gray-500">{dates.en}</p>
-                      </div>
-
-                      {/* File Info */}
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
-                        <span>📊 {fileSize}</span>
-                        <span>📅 {new Date(bulletin.createdAt).toLocaleDateString('th-TH')}</span>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3">
-                        <a
-                          href={`/api/bulletins/${bulletin.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                        >
-                          👁️ ดู / View
-                        </a>
-                        <a
-                          href={`/api/bulletins/${bulletin.id}`}
-                          download
-                          className="flex-1 text-center px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-                        >
-                          💾 ดาวน์โหลด / Download
-                        </a>
-                      </div>
-
-                      {/* Storage Info */}
-                      <div className="mt-4 flex gap-2 justify-center">
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                          📁 Local
-                        </span>
-                        {bulletin.cloudinaryUrl && (
-                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            ☁️ Backup
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="mt-12 flex justify-center gap-4">
-                {page > 1 && (
-                  <Link
-                    href={`/bulletins?page=${page - 1}`}
-                    className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                  >
-                    ← หน้าก่อนหน้า / Previous
-                  </Link>
-                )}
-                
-                <div className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium">
-                  หน้า {page} / {pagination.totalPages}
-                </div>
-
-                {page < pagination.totalPages && (
-                  <Link
-                    href={`/bulletins?page=${page + 1}`}
-                    className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                  >
-                    หน้าถัดไป / Next →
-                  </Link>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Info Section */}
-      <div className="container mx-auto px-4 pb-12">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-8">
-          <h2 className="text-2xl font-bold mb-4">เกี่ยวกับสูจิบัตร / About Bulletins</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold mb-2">📄 ไฟล์ PDF คุณภาพสูง</h3>
-              <p className="text-blue-100">
-                สามารถดูหรือดาวน์โหลดเพื่อพิมพ์ได้ / High-quality PDF files for viewing or printing
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">💾 ระบบสำรอง / Backup System</h3>
-              <p className="text-blue-100">
-                จัดเก็บทั้งในเซิร์ฟเวอร์หลักและคลาวด์ / Stored on main server with cloud backup
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">📅 อัพเดททุกสัปดาห์ / Weekly Updates</h3>
-              <p className="text-blue-100">
-                สูจิบัตรใหม่ทุกวันอาทิตย์ / New bulletin every Sunday
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">📱 เข้าถึงง่าย / Easy Access</h3>
-              <p className="text-blue-100">
-                ดูได้บนทุกอุปกรณ์ / Accessible on all devices
-              </p>
-            </div>
-          </div>
         </div>
-      </div>
+      </section>
+
+      <section className="py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          {bulletins.length === 0 ? (
+            <Card className="p-12 text-center bg-slate-50 border-dashed border-2">
+              <div className="text-6xl mb-4">📄</div>
+              <h2 className="text-2xl font-semibold mb-2">ยังไม่มีสูจิบัตร</h2>
+              <p className="text-muted-foreground">
+                Checking back next Sunday – bulletins will appear here once they are published.
+              </p>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {bulletins.map((bulletin) => {
+                  const dates = formatDateRange(bulletin.date);
+                  return (
+                    <Card
+                      key={bulletin.id}
+                      className="flex flex-col h-full border border-slate-100 shadow-sm hover:shadow-lg transition-shadow"
+                    >
+                      <div className="flex items-center justify-between px-6 pt-6 pb-4">
+                        <div className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
+                          <FileText className="w-4 h-4" />
+                          PDF
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          อัปเดต {formatShortDate(bulletin.createdAt)}
+                        </span>
+                      </div>
+
+                      <div className="px-6 pb-6 flex flex-col flex-1 gap-4">
+                        <div>
+                          <p className="text-sm text-blue-600 font-semibold">{dates.th.weekday}</p>
+                          <h3 className="text-xl font-semibold text-slate-900">{bulletin.title.th}</h3>
+                          <p className="text-sm text-muted-foreground">{bulletin.title.en}</p>
+                        </div>
+
+                        <div className="rounded-xl bg-slate-50 p-4 space-y-1 text-sm text-muted-foreground">
+                          <p className="font-medium text-slate-900">{dates.th.full}</p>
+                          <p>{dates.en.full}</p>
+                          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500 mt-2">
+                            <HardDrive className="w-3.5 h-3.5" />
+                            {formatFileSize(bulletin.fileSize)}
+                          </div>
+                        </div>
+
+                        <div className="mt-auto flex flex-col gap-3">
+                          <a
+                            href={`/api/bulletins/${bulletin.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            ดู / View
+                          </a>
+                          <a
+                            href={`/api/bulletins/${bulletin.id}`}
+                            download
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            ดาวน์โหลด / Download
+                          </a>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium">
+                            <HardDrive className="w-3 h-3" />
+                            Local storage
+                          </span>
+                          {bulletin.cloudinaryUrl && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-sky-50 text-sky-700 rounded-full font-medium">
+                              ☁️ Cloud backup
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {pagination.totalPages > 1 && (
+                <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+                  <PaginationButton
+                    disabled={page <= 1}
+                    href={`/bulletins?page=${Math.max(1, page - 1)}`}
+                    label="← หน้าก่อนหน้า / Previous"
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    หน้า {page} / {pagination.totalPages}
+                  </span>
+                  <PaginationButton
+                    disabled={page >= pagination.totalPages}
+                    href={`/bulletins?page=${Math.min(pagination.totalPages, page + 1)}`}
+                    label="หน้าถัดไป / Next →"
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="pb-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card className="p-10 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl">
+            <div className="grid md:grid-cols-2 gap-8">
+              <Feature
+                title="ไฟล์คุณภาพสูง"
+                subtitle="High-quality PDF"
+                body="ดูได้คมชัดบนทุกอุปกรณ์ หรือดาวน์โหลดไปพิมพ์สำหรับกลุ่มเล็ก/สมาชิกที่บ้าน"
+              />
+              <Feature
+                title="ระบบสำรอง"
+                subtitle="Redundant storage"
+                body="ไฟล์ถูกเก็บไว้ทั้งบน Raspberry Pi และ Cloud จึงมั่นใจว่าเข้าถึงได้เสมอ"
+              />
+              <Feature
+                title="อัปเดตทุกสัปดาห์"
+                subtitle="Weekly cadence"
+                body="ทีมงานเผยแพร่สูจิบัตรทุกเช้าวันอาทิตย์ พร้อมกิจกรรมและประกาศล่าสุด"
+              />
+              <Feature
+                title="เข้าถึงง่าย"
+                subtitle="One tap access"
+                body="ลิงก์ดู / ดาวน์โหลดอยู่ในที่เดียว ไม่ว่าจะบนมือถือหรือคอมพิวเตอร์"
+              />
+            </div>
+          </Card>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PaginationButton({ href, label, disabled }) {
+  if (disabled) {
+    return (
+      <span className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-400 cursor-not-allowed">
+        {label}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium transition-colors"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function Feature({ title, subtitle, body }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm uppercase tracking-wide text-slate-300">{subtitle}</p>
+      <h3 className="text-xl font-semibold">{title}</h3>
+      <p className="text-slate-200">{body}</p>
     </div>
   );
+}
+
+function formatFileSize(size) {
+  if (!size) return 'N/A';
+  const mb = size / 1024 / 1024;
+  return `${mb.toFixed(2)} MB`;
+}
+
+function formatShortDate(dateString) {
+  return new Date(dateString).toLocaleDateString('th-TH', {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit',
+  });
+}
+
+function formatDateRange(dateString) {
+  const date = new Date(dateString);
+  const opts = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+  return {
+    th: {
+      full: date.toLocaleDateString('th-TH', opts),
+      weekday: date.toLocaleDateString('th-TH', { weekday: 'long' }),
+    },
+    en: {
+      full: date.toLocaleDateString('en-US', opts),
+    },
+  };
 }
