@@ -809,15 +809,60 @@ SETUP_ELASTICSEARCH
     success "✓ Elasticsearch started on port ${ES_PORT}"
   fi
 
+  # Start Kibana for log visualization
+  KIBANA_CONTAINER="kibana"
+  KIBANA_PORT="5601"
+
+  if ssh_cmd "docker ps --filter name=${KIBANA_CONTAINER} --format '{{.Names}}'" | grep -q "${KIBANA_CONTAINER}"; then
+    success "✓ Kibana already running"
+  else
+    info "Starting Kibana container..."
+
+    ssh_cmd bash <<SETUP_KIBANA
+set -e
+
+# Run Kibana in Docker
+docker run -d \\
+  --name ${KIBANA_CONTAINER} \\
+  --restart unless-stopped \\
+  -p ${KIBANA_PORT}:5601 \\
+  -e "ELASTICSEARCH_HOSTS=http://host.docker.internal:${ES_PORT}" \\
+  --add-host=host.docker.internal:host-gateway \\
+  docker.elastic.co/kibana/kibana:${ES_VERSION} || {
+    echo "⚠️  Failed to start Kibana container"
+    exit 0
+  }
+
+echo "Waiting for Kibana to start..."
+for i in {1..60}; do
+  if curl -s http://localhost:${KIBANA_PORT}/api/status >/dev/null 2>&1; then
+    echo "✓ Kibana is ready"
+    break
+  fi
+  sleep 3
+done
+SETUP_KIBANA
+
+    success "✓ Kibana started on port ${KIBANA_PORT}"
+  fi
+
   # Update app container environment to enable Elasticsearch logging
   info "Configuring app to send logs to Elasticsearch..."
   ssh_cmd "docker exec ${CONTAINER_NAME} sh -c 'export ELASTICSEARCH_ENABLED=true && export ELASTICSEARCH_NODE=http://host.docker.internal:${ES_PORT}'" 2>/dev/null || info "Note: Container will use Elasticsearch on next restart"
 
   echo ""
-  info "Elasticsearch Dashboard:"
-  echo "  Health: curl http://$hostIp:${ES_PORT}/_cluster/health"
+  success "✓ Elasticsearch + Kibana ready for centralized logging"
+  echo ""
+  info "Access Kibana (Log Viewer):"
+  echo "  Local:     http://$hostIp:${KIBANA_PORT}"
+  if [ -n "${TAILSCALE_IP:-}" ]; then
+    echo "  Tailscale: http://$TAILSCALE_IP:${KIBANA_PORT}"
+  fi
+  echo ""
+  info "Elasticsearch API:"
+  echo "  Health:  curl http://$hostIp:${ES_PORT}/_cluster/health"
   echo "  Indices: curl http://$hostIp:${ES_PORT}/_cat/indices"
-  echo "  Logs: curl http://$hostIp:${ES_PORT}/cc-church-logs/_search"
+  echo "  Logs:    curl http://$hostIp:${ES_PORT}/cc-church-logs/_search"
   echo ""
 fi
 

@@ -144,12 +144,14 @@ ELASTICSEARCH_NODE=http://localhost:9200
 - Optional pre-auth key for unattended setup
 - Access MQTT from anywhere via Tailscale IP
 
-**Elasticsearch Integration (Centralized Logging):**
+**Elasticsearch + Kibana Integration (Centralized Logging):**
 - Automatic Elasticsearch Docker container setup
+- Kibana web UI for log visualization
 - Pino logs sent to Elasticsearch for analysis
-- Query logs via Elasticsearch REST API
+- Access logs from anywhere via Tailscale or Cloudflare Tunnel
+- Search, filter, and create dashboards
 - Track API requests, errors, and health checks
-- Low resource usage (512MB RAM)
+- Low resource usage (~1GB RAM for both)
 
 ## 🔧 How It Works
 
@@ -198,10 +200,12 @@ The deployment scripts are designed to work seamlessly with the monorepo structu
    - Install Tailscale on Pi
    - Authenticate (auto with pre-auth key or manual)
    - Get Tailscale IP
-13. Setup Elasticsearch for centralized logging (if enabled)
+13. Setup Elasticsearch + Kibana for centralized logging (if enabled)
    - Start Elasticsearch Docker container
+   - Start Kibana Docker container for log visualization
    - Configure Pino to send logs to Elasticsearch
    - Create log indices
+   - Enable remote access via Tailscale
 14. Verify all services running
 ```
 
