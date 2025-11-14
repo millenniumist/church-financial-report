@@ -100,7 +100,8 @@ All models include standard audit fields (createdAt, updatedAt) and use CUID for
 - **Purpose**: Source of truth for financial data
 - **Authentication**: Service account with readonly access
 - **Data Flow**: Scheduled/API-triggered sync to database
-- **Sheets**: "Monthly" (financial data), "Project" (fundraising goals)
+- **Active Sheet**: "Monthly" (financial data with income/expense categories)
+- **Available Function**: "Project" sheet reader exists but not currently used
 - **Processing**: Automatic category detection and data parsing
 
 ### Cloudinary Integration
@@ -310,13 +311,11 @@ graph TB
     subgraph "Application Stack"
         NEXT[⚛️ Next.js App<br/>Port 8358<br/>React 19 + API Routes]
         HEALTH[💓 Health Monitor<br/>Discord + MQTT]
-        PROXY[🔀 Reverse Proxy<br/>Nginx - Future]
     end
 
     subgraph "Data & Storage"
         POSTGRES[(🐘 PostgreSQL<br/>Primary + Hot-swap<br/>Prisma ORM)]
         ELASTIC[(🔍 Elasticsearch<br/>Centralized Logs<br/>Kibana UI)]
-        REDIS[(⚡ Redis Cache<br/>Future Enhancement)]
     end
 
     subgraph "External Integrations"
@@ -345,12 +344,10 @@ graph TB
 
     CF --> TS
     TS --> FW
-    FW --> PROXY
-    PROXY --> NEXT
+    FW --> NEXT
 
     NEXT --> POSTGRES
     NEXT --> ELASTIC
-    NEXT --> REDIS
 
     NEXT --> GSHEETS
     NEXT --> CLOUDINARY
@@ -514,8 +511,7 @@ graph TD
 ```mermaid
 graph TD
     subgraph "Data Sources"
-        GS[Google Sheets<br/>Monthly Financial Data]
-        GS2[Google Sheets<br/>Project Funding Data]
+        GS[Google Sheets<br/>Monthly Financial Data<br/>Sheet]
     end
 
     subgraph "Sync Process"
@@ -528,17 +524,14 @@ graph TD
 
     subgraph "Storage"
         DB[(PostgreSQL<br/>Financial Records)]
-        CACHE[(Redis Cache<br/>Optional)]
     end
 
     GS --> API
-    GS2 --> API
     API --> AUTH
     AUTH --> PARSE
     PARSE --> VAL
     VAL --> UPS
     UPS --> DB
-    DB -.-> CACHE
 ```
 
 ### Logging & Monitoring Architecture
@@ -546,13 +539,13 @@ graph TD
 ```mermaid
 graph TD
     subgraph "Application Logs"
-        PIN[Pino Logger<br/>Structured JSON]
+        PIN[Pino Logger<br/>Structured JSON<br/>Console Output]
         FIL[Health Check Filter<br/>Exclude /api/health]
         RED[Data Redaction<br/>Sensitive Headers]
     end
 
     subgraph "Transport Layer"
-        EST[pino-elasticsearch<br/>Direct Transport]
+        EST[pino-elasticsearch<br/>Not Configured]
         MQTT2[MQTT Publisher<br/>Health Metrics]
     end
 
@@ -564,19 +557,20 @@ graph TD
 
     subgraph "Alerting"
         DC2[Discord Bot<br/>Health Alerts]
-        EMAIL[Email Alerts<br/>Future]
     end
 
     PIN --> FIL
     FIL --> RED
-    RED --> EST
-    EST --> ES
+    RED -.-> EST
+    EST -.-> ES
     ES --> KIB
 
     PIN --> MQTT2
     MQTT2 --> HA2
 
     FIL --> DC2
+
+    style EST fill:#ffcccc,stroke:#ff0000,stroke-dasharray: 5 5
 ```
 
 ### Network & Security Architecture
@@ -595,7 +589,6 @@ graph TD
 
     subgraph "Local Network"
         FW[Firewall<br/>UFW]
-        RP[Reverse Proxy<br/>Nginx - Future]
         APP2[Application<br/>Port 8358]
     end
 
@@ -609,8 +602,7 @@ graph TD
     ADM --> CF2
     CF2 --> TS2
     TS2 --> FW
-    FW --> RP
-    RP --> APP2
+    FW --> APP2
     APP2 --> DB2
     APP2 --> MQTT3
     APP2 --> ES2
@@ -640,7 +632,6 @@ graph TD
 
     subgraph "Data Access"
         PRIS[Prisma ORM<br/>Database Queries]
-        CACHE[Cache Layer<br/>Redis - Future]
         EXT[External APIs<br/>Google, Cloudinary]
     end
 
@@ -665,9 +656,8 @@ graph TD
     CONT --> PRIS
     SYNC --> PRIS
 
-    PRIS --> CACHE
-    CACHE --> DB3
-    CACHE --> DB4
+    PRIS --> DB3
+    PRIS --> DB4
 
     FIN --> EXT
     CONT --> EXT
@@ -755,14 +745,11 @@ graph TD
 
     subgraph "Build Process"
         DOCKER[Docker Build<br/>Multi-stage]
-        TEST[Automated Tests<br/>Future Implementation]
-        SCAN[Security Scan<br/>Future Implementation]
     end
 
     subgraph "Deployment"
         REMOTE[Raspberry Pi<br/>Target Server]
         DOCKER2[Docker Compose<br/>Production Stack]
-        PROXY[Reverse Proxy<br/>Nginx - Future]
     end
 
     subgraph "Infrastructure Setup"
@@ -779,12 +766,9 @@ graph TD
     end
 
     GIT --> DOCKER
-    DOCKER --> TEST
-    TEST --> SCAN
-    SCAN --> REMOTE
+    DOCKER --> REMOTE
 
     REMOTE --> DOCKER2
-    DOCKER2 --> PROXY
 
     DOCKER2 --> POSTGRES
     DOCKER2 --> ELASTIC
@@ -850,13 +834,15 @@ TAILSCALE_AUTH_KEY=****  # Optional pre-auth key
 
 ## Centralized Logging with Elasticsearch
 
-### Logging Architecture
+### Current Logging Architecture
 
 **Pino Logger Configuration:**
-- **Structured Logging**: JSON format with ECS compliance
-- **Transport Layer**: Direct shipping to Elasticsearch via pino-elasticsearch
-- **Health Check Filtering**: Automatic exclusion of `/api/health` endpoints
+- **Structured Logging**: JSON format with ECS compliance (logs to stdout/stderr)
+- **Transport Layer**: Pino logs to console output only
+- **Health Check Filtering**: Automatic exclusion of `/api/health` endpoints from logging
 - **Sensitive Data Protection**: Header redaction and body truncation
+
+**Note**: While `pino-elasticsearch` is installed as a dependency, it's not actively configured in the Pino logger setup. Pino currently provides structured logging to console output without direct Elasticsearch integration.
 
 **Log Structure:**
 ```json
@@ -975,15 +961,15 @@ DISCORD_CHANNEL_ID=**** // Discord channel ID
 - **Secrets**: Managed via `wrangler secret put`
 - **KV Storage**: For state persistence between executions
 
-## MQTT & Home Assistant Integration
+## MQTT Integration
 
-### Smart Home Integration
+### Health Monitoring via MQTT
 
 **MQTT Publishing:**
 - **Broker**: Local Mosquitto MQTT server
 - **Topics**: `homeassistant/sensor/cc-church/*`
 - **QoS**: Quality of Service level 1 (at least once delivery)
-- **Discovery**: Automatic Home Assistant device registration
+- **Discovery**: Publishes Home Assistant MQTT discovery configs
 
 **Published Sensors:**
 - `sensor.cc_church_status`: Overall health status ("healthy"/"unhealthy")
@@ -992,28 +978,17 @@ DISCORD_CHANNEL_ID=**** // Discord channel ID
 - `sensor.cc_church_cpu_usage`: Container CPU usage percentage
 - `sensor.cc_church_uptime`: Container uptime in seconds
 
-**Home Assistant Configuration:**
-```yaml
-# Example automation for health alerts
-automation:
-  - alias: "Alert on CC Church Down"
-    trigger:
-      - platform: state
-        entity_id: sensor.cc_church_status
-        to: 'unhealthy'
-    action:
-      - service: notify.mobile_app
-        data:
-          title: "CC Church Alert"
-          message: "Application is unhealthy!"
+**Note**: The MQTT topics use Home Assistant naming conventions for compatibility, but **Home Assistant is not deployed** as part of this system. The MQTT data can be consumed by any MQTT client or home automation system that supports these topics.
 
-# Example dashboard card
-type: entities
-entities:
-  - sensor.cc_church_status
-  - sensor.cc_church_response_time
-  - sensor.cc_church_memory_usage
-  - sensor.cc_church_cpu_usage
+**Example MQTT Client Configuration:**
+```bash
+# Subscribe to all church sensors
+mosquitto_sub -h localhost -t "homeassistant/sensor/cc-church/#" -u ccchurch -P secure-password
+
+# Example sensor data:
+# homeassistant/sensor/cc-church/status → "healthy"
+# homeassistant/sensor/cc-church/response_time → "45"
+# homeassistant/sensor/cc-church/memory_usage → "256"
 ```
 
 **MQTT Security:**
@@ -1072,7 +1047,6 @@ CF_API_TOKEN=your-api-token
 - **Session Security**: HTTP-only cookies with secure flags
 - **API Key Protection**: Sensitive operations require API keys
 - **Password Policies**: Configurable admin credentials
-- **Rate Limiting**: Not implemented (recommendation for future)
 
 ### Data Protection
 - **Encryption**: Database connections with SSL/TLS
@@ -1086,25 +1060,6 @@ CF_API_TOKEN=your-api-token
 - **API Security**: Input validation and sanitization
 - **CORS Configuration**: Proper cross-origin policies
 
-## Future Enhancements
-
-### Planned Features
-- **Multi-tenant Architecture**: Support for multiple churches
-- **Advanced Analytics**: Financial trend analysis and reporting
-- **Mobile Application**: Native apps for iOS and Android
-- **Real-time Notifications**: WebSocket-based live updates
-- **Advanced Caching**: Redis integration for performance
-- **API Rate Limiting**: Protection against abuse
-- **Automated Testing**: CI/CD pipeline with comprehensive tests
-- **Container Orchestration**: Kubernetes migration option
-
-### Scalability Improvements
-- **Database Sharding**: Horizontal scaling for large datasets
-- **CDN Integration**: Global content delivery
-- **Load Balancing**: Multiple application instances
-- **Microservices**: Service decomposition for better maintainability
-
-This comprehensive architecture provides a robust, scalable foundation for church financial and content management with extensive monitoring, security, and automation features.
 
 ## Data Flow Architecture
 
@@ -1174,7 +1129,6 @@ sequenceDiagram
 ### API Security
 - API key authentication for sensitive operations
 - Input validation and sanitization
-- Rate limiting considerations (not implemented)
 - CORS configuration
 
 ### Data Security
@@ -1221,7 +1175,6 @@ sequenceDiagram
 
 ### Horizontal Scaling
 - Stateless application design
-- External session storage (not implemented)
 - Database connection pooling via Prisma
 - CDN for static assets
 
@@ -1249,17 +1202,3 @@ sequenceDiagram
 - Environment variable management
 - Database migrations
 - Health checks and rollbacks
-
-## Future Enhancements
-
-### Potential Improvements
-- User role-based access control
-- Real-time data synchronization
-- Advanced analytics dashboard
-- Mobile application
-- API rate limiting
-- Multi-tenant architecture
-- Advanced caching (Redis)
-- CI/CD pipeline automation
-
-This architecture provides a robust, maintainable foundation for church financial and content management while supporting future growth and feature additions.
