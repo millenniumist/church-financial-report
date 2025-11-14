@@ -1,0 +1,14 @@
+{
+  "name": "cc-church-health-watcher",
+  "version": "1.0.0",
+  "description": "External health monitor for CC Church Application running on Cloudflare Workers",
+  "private": true,
+  "scripts": {
+    "deploy": "./deploy.sh",
+    "logs": "wrangler tail",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

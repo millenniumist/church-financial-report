@@ -750,6 +750,8 @@ MQTT_CLIENT_ID=${MQTT_CLIENT_ID:-cc-church-health}
 MQTT_USERNAME=${MQTT_USERNAME:-ccchurch}
 MQTT_PASSWORD=${MQTT_PASSWORD:-ccchurch2025}
 CHECK_INTERVAL=${CHECK_INTERVAL:-60000}
+DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-}
 HEALTHENV
 
   # Transfer files
@@ -785,52 +787,84 @@ INSTALL_SERVICE
   echo ""
 fi
 
-# Step 11.5: Setup automated backups with cron
-echo -e "${YELLOW}[11.5/13] Setting up automated backups...${NC}"
+# Step 11.5: Setup automated tasks (backups, log cleanup, media cleanup)
+echo -e "${YELLOW}[11.5/13] Setting up automated tasks...${NC}"
 
-# Check if backup scripts were transferred
+# Check if scripts were transferred
 if ssh_cmd "[ -f $REMOTE_SCRIPTS_DIR/backup.sh ]" 2>/dev/null; then
-  info "Configuring automated backup cron job"
+  info "Configuring automated tasks via cron"
 
-  ssh_cmd bash <<SETUP_BACKUP_CRON
+  ssh_cmd bash <<'SETUP_ALL_CRONS'
 set -e
 
-cd $REMOTE_SCRIPTS_DIR
+cd /home/mill/hosting/scripts
 
-# Make scripts executable
-chmod +x *.sh
+# Make all scripts executable
+chmod +x *.sh *.js 2>/dev/null || true
 
-# Check if cron job already exists
-if crontab -l 2>/dev/null | grep -F "backup.sh" >/dev/null 2>&1; then
-  echo "✓ Backup cron job already configured"
-else
-  # Add cron job (2 AM daily)
-  (
-    crontab -l 2>/dev/null || true
-    echo ""
-    echo "# Automated backup for CC Financial Application"
-    echo "0 2 * * * $REMOTE_SCRIPTS_DIR/backup.sh >> /home/mill/hosting/backups/cron.log 2>&1"
-  ) | crontab -
-
-  echo "✓ Backup cron job installed (runs daily at 2 AM)"
+# Install Node.js dependencies for cleanup scripts
+echo "Installing dependencies for cleanup scripts..."
+cd /home/mill/hosting
+if [ ! -f package.json ]; then
+  echo '{"name": "hosting-scripts", "version": "1.0.0", "private": true}' > package.json
 fi
+npm install --no-save cloudinary @prisma/client >/dev/null 2>&1 || echo "⚠️  Warning: Failed to install some dependencies"
+cd /home/mill/hosting/scripts
 
-# Create backups directory
+# Remove old managed cron jobs
+crontab -l 2>/dev/null | grep -v "# CC-FINANCIAL-MANAGED" > /tmp/new_cron.txt || echo "" > /tmp/new_cron.txt
+
+# Add all managed cron jobs
+cat >> /tmp/new_cron.txt << 'CRONEOF'
+
+# ========================================
+# CC Financial Automated Tasks
+# Managed by deploy-remote.sh
+# ========================================
+
+# Daily backups - 2:00 AM
+0 2 * * * /home/mill/hosting/scripts/backup.sh >> /home/mill/hosting/backups/cron.log 2>&1 # CC-FINANCIAL-MANAGED
+
+# Daily Elasticsearch index rotation - 1:00 AM
+0 1 * * * /home/mill/hosting/scripts/elasticsearch-rotate-index.sh >> /home/mill/hosting/logs/es-rotation.log 2>&1 # CC-FINANCIAL-MANAGED
+
+# Monthly Cloudinary cleanup - 1st of month at 3:00 AM
+0 3 1 * * cd /home/mill/hosting && DATABASE_URL="postgresql://ccfinapp:cc2025secure@localhost:5432/cc_financial" DRY_RUN=false node scripts/cloudinary-cleanup.js >> /home/mill/hosting/logs/cloudinary-cleanup.log 2>&1 # CC-FINANCIAL-MANAGED
+
+CRONEOF
+
+# Install new crontab
+crontab /tmp/new_cron.txt
+rm /tmp/new_cron.txt
+
+# Create necessary directories
 mkdir -p /home/mill/hosting/backups
+mkdir -p /home/mill/hosting/logs
 
-# Verify cron service is running
+# Show installed cron jobs
+echo ""
+echo "✓ Installed automated tasks:"
+crontab -l | grep "CC-FINANCIAL-MANAGED" | sed 's/ # CC-FINANCIAL-MANAGED//' || true
+
+# Verify cron service
 if command -v systemctl >/dev/null 2>&1; then
   if systemctl is-active --quiet cron 2>/dev/null || systemctl is-active --quiet cronie 2>/dev/null; then
     echo "✓ Cron service is running"
-  else
-    echo "⚠️  Cron service may not be running"
   fi
 fi
-SETUP_BACKUP_CRON
+SETUP_ALL_CRONS
 
-  success "✓ Automated backups configured (daily at 2 AM, 6-month retention)"
+  # Setup Elasticsearch ILM (one-time during deployment)
+  info "Setting up Elasticsearch log lifecycle management..."
+  ssh_cmd "cd /home/mill/hosting/scripts && LOG_RETENTION_DAYS=90 ./setup-elasticsearch-ilm.sh" 2>&1 | tail -5
+
+  success "✓ Automated tasks configured:"
+  success "  - Daily backups (2 AM, 180-day retention)"
+  success "  - Daily ES index rotation (1 AM)"
+  success "  - Monthly Cloudinary cleanup (1st at 3 AM)"
+  success "  - ES log lifecycle (90-day retention)"
 else
-  warn "⚠️  Backup scripts not found, skipping automated backup setup"
+  warn "⚠️  Scripts not found, skipping automated task setup"
 fi
 echo ""
 

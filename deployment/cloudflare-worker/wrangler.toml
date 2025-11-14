@@ -1,0 +1,18 @@
+name = "cc-church-health-watcher"
+main = "health-watcher.js"
+compatibility_date = "2024-01-01"
+
+# Cron trigger - runs every 1 minute
+[triggers]
+crons = ["* * * * *"]
+
+# KV namespace for state storage
+[[kv_namespaces]]
+binding = "HEALTH_STATE"
+id = "1a81d06f8ed1425e8c3f5f283156fb5b"
+
+# Environment variables (secrets)
+# Set via: wrangler secret put DISCORD_BOT_TOKEN
+# Set via: wrangler secret put DISCORD_CHANNEL_ID
+[vars]
+# Non-sensitive config can go here
