@@ -109,17 +109,6 @@ export default async function BulletinsPage({ searchParams }) {
                           </a>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium">
-                            <HardDrive className="w-3 h-3" />
-                            Local storage
-                          </span>
-                          {bulletin.cloudinaryUrl && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-sky-50 text-sky-700 rounded-full font-medium">
-                              ☁️ Cloud backup
-                            </span>
-                          )}
-                        </div>
                       </div>
                     </Card>
                   );

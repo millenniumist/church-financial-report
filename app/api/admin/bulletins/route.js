@@ -13,7 +13,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const BULLETINS_DIR = process.env.BULLETINS_STORAGE_PATH || '/home/mill/hosting/bulletins';
+const BULLETINS_DIR = process.env.BULLETINS_STORAGE_PATH || '/app/bulletins';
 
 // GET - List all bulletins
 async function getHandler(request) {
@@ -72,7 +72,17 @@ async function postHandler(request) {
     }
 
     // Ensure bulletins directory exists
-    await ensureBulletinsDir();
+    const dirCreated = await ensureBulletinsDir();
+    if (!dirCreated) {
+      logError(request, new Error('Failed to create bulletins directory'), {
+        operation: 'create_bulletins_dir',
+        path: BULLETINS_DIR
+      });
+      return NextResponse.json({
+        error: 'Failed to create bulletins directory',
+        details: 'Check server permissions'
+      }, { status: 500 });
+    }
 
     // Generate filename
     const filename = formatBulletinFilename(date);
@@ -83,7 +93,19 @@ async function postHandler(request) {
     const buffer = Buffer.from(bytes);
 
     // Save to local storage (PRIMARY)
-    await fs.writeFile(localPath, buffer);
+    try {
+      await fs.writeFile(localPath, buffer);
+    } catch (writeError) {
+      logError(request, writeError, {
+        operation: 'write_bulletin_file',
+        path: localPath,
+        bufferSize: buffer.length
+      });
+      return NextResponse.json({
+        error: 'Failed to save bulletin file',
+        details: writeError.message
+      }, { status: 500 });
+    }
 
     // Upload to Cloudinary as backup (SECONDARY)
     let cloudinaryUrl = null;

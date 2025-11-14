@@ -7,21 +7,17 @@ export const metadata = {
 
 export default function BulletinsPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            จัดการสูจิบัตร
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Manage Church Bulletins
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">จัดการสูจิบัตร / Bulletins</h1>
+          <p className="text-slate-600 mt-1">Manage church bulletins and weekly announcements</p>
         </div>
         <Link
           href="/admin/bulletins/new"
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition font-medium"
         >
-          + อัพโหลดสูจิบัตรใหม่ / Upload New Bulletin
+          + Upload New
         </Link>
       </div>
 

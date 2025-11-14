@@ -73,6 +73,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 # Copy Google Sheets credentials
 COPY --from=builder --chown=nextjs:nodejs /app/privatekey-gsheet.json ./privatekey-gsheet.json
 
+# Create bulletins directory with proper ownership before switching to nextjs user
+RUN mkdir -p /app/bulletins && chown -R nextjs:nodejs /app/bulletins
+
 USER nextjs
 
 EXPOSE 8358
