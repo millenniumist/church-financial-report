@@ -209,8 +209,8 @@ HEALTH_ENDPOINT=/api/health
 CHECK_INTERVAL=60000
 
 # Discord Bot
-DISCORD_BOT_TOKEN=MTQ...              # Pre-configured bot token
-DISCORD_CHANNEL_ID=""                 # Channel ID for alerts
+DISCORD_BOT_TOKEN=<discord-bot-token>      # Use the value stored in deployment/.env
+DISCORD_CHANNEL_ID=<discord-channel-id>    # Use the channel ID stored in deployment/.env
 ```
 
 **MQTT Publishing for Home Assistant:**
@@ -223,8 +223,8 @@ DISCORD_CHANNEL_ID=""                 # Channel ID for alerts
 ```bash
 MQTT_BROKER=mqtt://192.168.x.x:1883
 MQTT_TOPIC=homeassistant/sensor/cc-church
-MQTT_USERNAME=ccchurch
-MQTT_PASSWORD=ccchurch2025
+MQTT_USERNAME=<mqtt-username>
+MQTT_PASSWORD=<mqtt-password>
 ```
 
 ### Centralized Logging with Elasticsearch
@@ -914,8 +914,8 @@ The application health check detected an issue
 
 **Configuration:**
 ```bash
-DISCORD_BOT_TOKEN=MTQ...              # Pre-configured bot token
-DISCORD_CHANNEL_ID=1234567890123456789 # Target channel ID
+DISCORD_BOT_TOKEN=<discord-bot-token>      # Use the value stored in deployment/.env
+DISCORD_CHANNEL_ID=<discord-channel-id>    # Use the channel ID stored in deployment/.env
 ```
 
 ### Cloudflare Worker External Health Monitor
