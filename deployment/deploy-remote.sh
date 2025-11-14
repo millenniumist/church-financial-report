@@ -69,6 +69,7 @@ REMOTE_HOME="/home/$username"
 REMOTE_DEPLOY_DIR="$REMOTE_HOME/hosting"
 REMOTE_APP_DIR="$REMOTE_DEPLOY_DIR/app"
 REMOTE_CLOUDFLARE_DIR="$REMOTE_DEPLOY_DIR/cloudflare"
+REMOTE_SCRIPTS_DIR="$REMOTE_DEPLOY_DIR/scripts"
 
 # Colors
 RED='\033[0;31m'
@@ -275,7 +276,7 @@ echo ""
 
 # Step 4: Create remote deployment directory
 echo -e "${YELLOW}[4/13] Creating remote deployment directory...${NC}"
-ssh_cmd "mkdir -p $REMOTE_DEPLOY_DIR $REMOTE_APP_DIR $REMOTE_CLOUDFLARE_DIR" || error "✗ Failed to create remote directories"
+ssh_cmd "mkdir -p $REMOTE_DEPLOY_DIR $REMOTE_APP_DIR $REMOTE_CLOUDFLARE_DIR $REMOTE_SCRIPTS_DIR" || error "✗ Failed to create remote directories"
 success "✓ Remote directories created"
 echo ""
 
@@ -297,6 +298,14 @@ rsync_cmd -av "$CLOUDFLARE_DIR/" "$username@$TARGET_HOST:$REMOTE_CLOUDFLARE_DIR/
 
 info "Syncing environment and config files..."
 rsync_cmd -av --delete --exclude="node_modules" --exclude=".next" "$APP_DIR/.env.production" "$username@$TARGET_HOST:$REMOTE_APP_DIR/" || error "✗ Failed to sync environment file"
+
+info "Syncing backup/restore scripts..."
+SCRIPTS_DIR="$LOCAL_DIR/scripts"
+if [ -d "$SCRIPTS_DIR" ]; then
+  rsync_cmd -av "$SCRIPTS_DIR/" "$username@$TARGET_HOST:$REMOTE_SCRIPTS_DIR/" || error "✗ Failed to sync scripts directory"
+  ssh_cmd "chmod +x $REMOTE_SCRIPTS_DIR/*.sh" || warn "⚠️  Failed to make scripts executable"
+  info "Backup scripts synced and made executable"
+fi
 
 success "✓ Files transferred to remote host"
 echo ""
@@ -776,6 +785,55 @@ INSTALL_SERVICE
   echo ""
 fi
 
+# Step 11.5: Setup automated backups with cron
+echo -e "${YELLOW}[11.5/13] Setting up automated backups...${NC}"
+
+# Check if backup scripts were transferred
+if ssh_cmd "[ -f $REMOTE_SCRIPTS_DIR/backup.sh ]" 2>/dev/null; then
+  info "Configuring automated backup cron job"
+
+  ssh_cmd bash <<SETUP_BACKUP_CRON
+set -e
+
+cd $REMOTE_SCRIPTS_DIR
+
+# Make scripts executable
+chmod +x *.sh
+
+# Check if cron job already exists
+if crontab -l 2>/dev/null | grep -F "backup.sh" >/dev/null 2>&1; then
+  echo "✓ Backup cron job already configured"
+else
+  # Add cron job (2 AM daily)
+  (
+    crontab -l 2>/dev/null || true
+    echo ""
+    echo "# Automated backup for CC Financial Application"
+    echo "0 2 * * * $REMOTE_SCRIPTS_DIR/backup.sh >> /home/mill/hosting/backups/cron.log 2>&1"
+  ) | crontab -
+
+  echo "✓ Backup cron job installed (runs daily at 2 AM)"
+fi
+
+# Create backups directory
+mkdir -p /home/mill/hosting/backups
+
+# Verify cron service is running
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl is-active --quiet cron 2>/dev/null || systemctl is-active --quiet cronie 2>/dev/null; then
+    echo "✓ Cron service is running"
+  else
+    echo "⚠️  Cron service may not be running"
+  fi
+fi
+SETUP_BACKUP_CRON
+
+  success "✓ Automated backups configured (daily at 2 AM, 6-month retention)"
+else
+  warn "⚠️  Backup scripts not found, skipping automated backup setup"
+fi
+echo ""
+
 # Step 12: Setup Tailscale for remote access (optional)
 if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
   echo -e "${YELLOW}[12/13] Setting up Tailscale for remote MQTT access...${NC}"
@@ -952,3 +1010,16 @@ if [ "${ENABLE_HEALTH_MONITOR:-true}" = "true" ]; then
   fi
   echo ""
 fi
+
+echo "Automated Backups:"
+echo "  - Schedule: Daily at 2:00 AM"
+echo "  - Retention: 6 months (180 days)"
+echo "  - Location: /home/mill/hosting/backups/"
+echo ""
+echo "  Commands:"
+echo "    ssh $username@$hostIp '$REMOTE_SCRIPTS_DIR/backup.sh'           # Run backup now"
+echo "    ssh $username@$hostIp '$REMOTE_SCRIPTS_DIR/restore.sh list'     # List backups"
+echo "    ssh $username@$hostIp '$REMOTE_SCRIPTS_DIR/restore.sh <date>'   # Restore backup"
+echo "    ssh $username@$hostIp 'crontab -l'                               # View cron jobs"
+echo "    ssh $username@$hostIp 'tail -f /home/mill/hosting/backups/cron.log'  # View backup logs"
+echo ""
