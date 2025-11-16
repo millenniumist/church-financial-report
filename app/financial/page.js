@@ -62,7 +62,7 @@ export default async function FinancialPage() {
       <footer className="border-t py-8 bg-muted/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-muted-foreground">
-            ข้อมูลการเงินถูกรวมกลุ่มเป็นหมวดหมู่ระดับสูงเพื่อความโปร่งใสและการรักษาความเป็นส่วนตัว
+            ข้อมูลการเงินถูกรวมกลุ่มเป็นหมวดหมู่เพื่อความโปร่งใสและเข้าใจง่าย
           </p>
           <p className="text-center text-sm text-muted-foreground mt-2">
             © {currentYear} คริสตจักรชลบุรี ภาค7 - สงวนลิขสิทธิ์
