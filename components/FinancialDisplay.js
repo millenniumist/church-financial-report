@@ -132,7 +132,7 @@ export default function FinancialDisplay({ initialData }) {
           <div className="mb-8">
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">แผนภูมิและสถิติ</h2>
           </div>
-          <FinancialCharts monthlyData={monthlyData} />
+          <FinancialCharts monthlyData={monthlyData} income={income} expenses={expenses} />
         </div>
       </section>
 

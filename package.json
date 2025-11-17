@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV next dev --turbopack'",
+    "dev:db:push": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV npx prisma db push'",
+    "dev:db:migrate": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV npx prisma migrate deploy'",
+    "dev:db:studio": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV npx prisma studio'",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
