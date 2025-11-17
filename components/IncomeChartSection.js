@@ -83,7 +83,10 @@ export default function IncomeChartSection({ income = [], totals }) {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => `฿${value.toLocaleString('th-TH', { minimumFractionDigits: 0 })}`}
+                formatter={(value) => {
+                  const percent = ((value / totals.income) * 100).toFixed(1);
+                  return `฿${value.toLocaleString('th-TH', { minimumFractionDigits: 0 })} (${percent}%)`;
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
