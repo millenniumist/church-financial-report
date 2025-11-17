@@ -29,6 +29,10 @@ COPY . .
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
+# Disable hot-swap during build by unsetting SECONDARY
+ENV DATABASE_URL_SECONDARY=
+# Use placeholder DB URL during build (won't actually connect)
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 
 # Generate Prisma Client
 RUN npx prisma generate

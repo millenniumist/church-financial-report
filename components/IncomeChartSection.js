@@ -1,8 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableFooter, TableRow } from '@/components/ui/table';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { useState, useEffect } from 'react';
 
 const COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -11,6 +11,18 @@ const COLORS = [
 ];
 
 export default function IncomeChartSection({ income = [], totals }) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
   // Sort income descending by amount for consistent display
   const sortedIncome = [...income].sort((a, b) => b.amount - a.amount);
 
@@ -56,12 +68,12 @@ export default function IncomeChartSection({ income = [], totals }) {
             <PieChart>
               <Pie
                 data={incomeChartData}
-                cx="40%"
+                cx="50%"
                 cy="50%"
                 labelLine={false}
                 label={renderCustomLabel}
-                outerRadius={100}
-                innerRadius={50}
+                outerRadius={isMobile ? 100 : 120}
+                innerRadius={isMobile ? 50 : 60}
                 fill="#8884d8"
                 dataKey="value"
                 paddingAngle={2}
@@ -73,46 +85,47 @@ export default function IncomeChartSection({ income = [], totals }) {
               <Tooltip
                 formatter={(value) => `฿${value.toLocaleString('th-TH', { minimumFractionDigits: 0 })}`}
               />
-              <Legend
-                data={incomeChartData}
-                layout="vertical"
-                verticalAlign="middle"
-                align="right"
-                iconSize={8}
-                wrapperStyle={{ paddingLeft: '20px', fontSize: '11px' }}
-                formatter={(value, entry) => {
-                  const percentage = ((entry.payload.value / incomeChartData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1);
-                  return `${value}`;
-                }}
-              />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Income Table */}
+      {/* Custom Chart Legend - complete data with colors and total */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-0">
-          <Table>
-            <TableBody>
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
               {sortedIncome.map((item, index) => (
-                <TableRow key={index} className="hover:bg-muted/50 transition-colors">
-                  <TableCell className="h-14 px-6">{item.category}</TableCell>
-                  <TableCell className="h-14 px-6 text-right font-medium tabular-nums">
-                    ฿{item.amount.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
-                  </TableCell>
-                </TableRow>
+                <div key={index} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                  <div
+                    className="relative w-4 h-4 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">
+                      {item.category}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      ฿{item.amount.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow className="bg-primary text-primary-foreground hover:bg-primary">
-                <TableCell className="h-14 px-6 font-semibold">รวม</TableCell>
-                <TableCell className="h-14 px-6 text-right font-semibold tabular-nums">
+            </div>
+
+            {/* Total Summary */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 rounded-full bg-primary flex-shrink-0" />
+                  <span className="text-sm font-semibold">รวมรายรับทั้งหมด</span>
+                </div>
+                <div className="text-lg font-bold text-primary tabular-nums">
                   ฿{totals.income.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
-                </TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
