@@ -181,19 +181,20 @@ function formatShortDate(dateString) {
     day: 'numeric',
     month: 'short',
     year: '2-digit',
+    timeZone: 'Asia/Bangkok'
   });
 }
 
 function formatDateRange(dateString) {
   const date = new Date(dateString);
-  const opts = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+  const opts = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long', timeZone: 'Asia/Bangkok' };
   return {
     th: {
       full: date.toLocaleDateString('th-TH', opts),
-      weekday: date.toLocaleDateString('th-TH', { weekday: 'long' }),
+      weekday: date.toLocaleDateString('th-TH', { weekday: 'long', timeZone: 'Asia/Bangkok' }),
     },
     en: {
-      full: date.toLocaleDateString('en-US', opts),
+      full: date.toLocaleDateString('en-US', { ...opts, timeZone: 'Asia/Bangkok' }),
     },
   };
 }

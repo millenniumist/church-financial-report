@@ -5,6 +5,7 @@ services:
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
+      TZ: Asia/Bangkok
       PORT: 8358
       GOOGLE_SERVICE_ACCOUNT_PATH: /app/privatekey-gsheet.json
       GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID:?GOOGLE_SHEETS_SPREADSHEET_ID is required}

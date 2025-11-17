@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV next dev --turbopack'",
-    "dev:db:push": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV npx prisma db push'",
-    "dev:db:migrate": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV npx prisma migrate deploy'",
-    "dev:db:studio": "bash -c 'source .env && DATABASE_URL=$DATABASE_URL_DEV npx prisma studio'",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bash -c 'source .env && TZ=Asia/Bangkok DATABASE_URL=$DATABASE_URL_DEV next dev --turbopack'",
+    "dev:db:push": "bash -c 'source .env && TZ=Asia/Bangkok DATABASE_URL=$DATABASE_URL_DEV npx prisma db push'",
+    "dev:db:studio": "bash -c 'source .env && TZ=Asia/Bangkok DATABASE_URL=$DATABASE_URL_DEV npx prisma studio'",
+    "db:sync": "node scripts/db-sync.mjs",
+    "build": "TZ=Asia/Bangkok next build",
+    "start": "TZ=Asia/Bangkok next start",
     "lint": "eslint",
-    "db:seed": "prisma db seed",
     "cleanup:financial": "node scripts/cleanupFinancialRecords.mjs"
   },
   "dependencies": {
@@ -35,6 +34,7 @@
     "next": "15.5.3",
     "next-themes": "^0.4.6",
     "path": "^0.12.7",
+    "pg": "^8.16.3",
     "pino": "^10.1.0",
     "pino-elasticsearch": "^8.1.0",
     "pino-http": "^11.0.0",

@@ -74,3 +74,6 @@ deployment/cloudflared.log
 
 # Backup files
 *.tar.gz
+
+# Database dumps
+pi-data-dump.json

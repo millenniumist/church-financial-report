@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableFooter, TableRow } from '@/components/ui/table';
 import MonthlyTable from '@/components/MonthlyTable';
-import FinancialCharts from '@/components/FinancialCharts';
+import IncomeChartSection from '@/components/IncomeChartSection';
+import ExpenseChartSection from '@/components/ExpenseChartSection';
+import MonthlyTrendChartSection from '@/components/MonthlyTrendChartSection';
 import { getAdminSettings } from '@/lib/adminSettings';
 
 export default function FinancialDisplay({ initialData }) {
@@ -55,6 +56,41 @@ export default function FinancialDisplay({ initialData }) {
 
   const { income, expenses, monthlyData, year, totals } = data;
 
+  // Calculate month range from available data
+  const getMonthRange = (data, year) => {
+    if (!data || data.length === 0) return null;
+
+    const monthMap = {
+      "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2, "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
+      "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8, "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
+    };
+
+    const monthNums = data.map(item => {
+      // If month includes year, extract just month name
+      const monthStr = item.month.split(' ')[0];
+      return monthMap[monthStr] ?? -1;
+    }).filter(num => num !== -1);
+
+    if (monthNums.length === 0) return null;
+
+    monthNums.sort((a, b) => a - b);
+
+    const earliest = monthNums[0];
+    const latest = monthNums[monthNums.length - 1];
+
+    const thaiMonths = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+
+    if (earliest === latest) {
+      return `${thaiMonths[earliest]} ${year}`;
+    }
+    return `${thaiMonths[earliest]} - ${thaiMonths[latest]} ${year}`;
+  };
+
+  const monthRange = getMonthRange(monthlyData, year);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -77,6 +113,8 @@ export default function FinancialDisplay({ initialData }) {
             </h1>
             <p className="text-lg text-muted-foreground">
               สรุปภาพรวมการเงินคริสตจักร ปี {year}
+              {monthRange && <br />}
+              {monthRange && <span className="text-sm">ข้อมูลเดือน: {monthRange}</span>}
             </p>
           </div>
         </div>
@@ -127,12 +165,24 @@ export default function FinancialDisplay({ initialData }) {
       </section>
 
       {/* Charts Section */}
-      <section className="py-12 sm:py-16 bg-muted/30">
+      <section className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">แผนภูมิและสถิติ</h2>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">แผนภูมิการเงิน</h2>
           </div>
-          <FinancialCharts monthlyData={monthlyData} income={income} expenses={expenses} />
+
+          <div className="space-y-8">
+            {/* Income and Expenses Charts with Tables */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <IncomeChartSection income={income} totals={totals} />
+              <ExpenseChartSection expenses={expenses} totals={totals} />
+            </div>
+
+            {/* Monthly Trend Chart */}
+            {monthlyData && monthlyData.length > 0 && (
+              <MonthlyTrendChartSection monthlyData={monthlyData} />
+            )}
+          </div>
         </div>
       </section>
 
@@ -154,86 +204,7 @@ export default function FinancialDisplay({ initialData }) {
         </section>
       )}
 
-      {/* Income & Expenses Section */}
-      <section className="py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Income */}
-            <div>
-              <div className="mb-6">
-                <h2 className="text-3xl font-semibold tracking-tight">รายรับ</h2>
-              </div>
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-0">
-                  {income.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <p className="text-muted-foreground">ไม่มีข้อมูล</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableBody>
-                        {income.map((item, index) => (
-                          <TableRow key={index} className="hover:bg-muted/50 transition-colors">
-                            <TableCell className="h-14 px-6">{item.category}</TableCell>
-                            <TableCell className="h-14 px-6 text-right font-medium tabular-nums">
-                              ฿{item.amount.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                      <TableFooter>
-                        <TableRow className="bg-primary text-primary-foreground hover:bg-primary">
-                          <TableCell className="h-14 px-6 font-semibold">รวม</TableCell>
-                          <TableCell className="h-14 px-6 text-right font-semibold tabular-nums">
-                            ฿{totals.income.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
-                          </TableCell>
-                        </TableRow>
-                      </TableFooter>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Expenses */}
-            <div>
-              <div className="mb-6">
-                <h2 className="text-3xl font-semibold tracking-tight">รายจ่าย</h2>
-              </div>
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-0">
-                  {expenses.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <p className="text-muted-foreground">ไม่มีข้อมูล</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableBody>
-                        {expenses.map((item, index) => (
-                          <TableRow key={index} className="hover:bg-muted/50 transition-colors">
-                            <TableCell className="h-14 px-6">{item.category}</TableCell>
-                            <TableCell className="h-14 px-6 text-right font-medium tabular-nums">
-                              ฿{item.amount.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                      <TableFooter>
-                        <TableRow className="bg-primary text-primary-foreground hover:bg-primary">
-                          <TableCell className="h-14 px-6 font-semibold">รวม</TableCell>
-                          <TableCell className="h-14 px-6 text-right font-semibold tabular-nums">
-                            ฿{totals.expenses.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
-                          </TableCell>
-                        </TableRow>
-                      </TableFooter>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
