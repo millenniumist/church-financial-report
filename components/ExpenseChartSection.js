@@ -56,7 +56,7 @@ export default function ExpenseChartSection({ expenses = [], totals }) {
             <PieChart>
               <Pie
                 data={expensesChartData}
-                cx="50%"
+                cx="40%"
                 cy="50%"
                 labelLine={false}
                 label={renderCustomLabel}
@@ -75,12 +75,14 @@ export default function ExpenseChartSection({ expenses = [], totals }) {
               />
               <Legend
                 data={expensesChartData}
-                layout="horizontal"
-                verticalAlign="bottom"
-                wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
+                layout="vertical"
+                verticalAlign="middle"
+                align="right"
+                iconSize={8}
+                wrapperStyle={{ paddingLeft: '20px', fontSize: '11px' }}
                 formatter={(value, entry) => {
                   const percentage = ((entry.payload.value / expensesChartData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1);
-                  return `${value} (${percentage}%)`;
+                  return `${value}`;
                 }}
               />
             </PieChart>
