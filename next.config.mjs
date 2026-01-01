@@ -7,8 +7,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: __dirname,
-  eslint: {
-    ignoreDuringBuilds: true,
+
+  webpack: (config, { webpack }) => {
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /test/,
+        contextRegExp: /thread-stream/,
+      })
+    );
+    return config;
   },
 };
 

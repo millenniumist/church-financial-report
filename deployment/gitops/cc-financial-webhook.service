@@ -1,0 +1,17 @@
+[Unit]
+Description=CC Financial GitOps Webhook
+After=network.target
+
+[Service]
+Type=simple
+User=__RUN_USER__
+WorkingDirectory=/srv/cc-financial
+EnvironmentFile=/srv/cc-financial/shared/gitops.env
+ExecStart=/usr/bin/python3 /srv/cc-financial/bin/webhook.py
+Restart=always
+RestartSec=2
+StandardOutput=append:/srv/cc-financial/logs/webhook.log
+StandardError=append:/srv/cc-financial/logs/webhook.log
+
+[Install]
+WantedBy=multi-user.target

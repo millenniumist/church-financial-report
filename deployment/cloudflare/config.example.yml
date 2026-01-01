@@ -2,11 +2,15 @@
 # Copy this file to config.yml and update with your tunnel ID
 
 tunnel: YOUR_TUNNEL_ID_HERE
-credentials-file: /Users/suparit/Desktop/code/hosting/cloudflare/YOUR_TUNNEL_ID.json
+credentials-file: /srv/cc-financial/cloudflare/YOUR_TUNNEL_ID.json
 
 ingress:
   - hostname: your-domain.com
     service: http://localhost:8358
   - hostname: www.your-domain.com
     service: http://localhost:8358
+  - hostname: hooks.your-domain.com
+    service: http://localhost:9000
+  - hostname: ssh.your-domain.com
+    service: ssh://localhost:22
   - service: http_status:404

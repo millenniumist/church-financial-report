@@ -1,0 +1,17 @@
+[Unit]
+Description=CC Financial Cloudflare Tunnel
+After=network.target
+
+[Service]
+Type=simple
+User=__RUN_USER__
+WorkingDirectory=/srv/cc-financial
+EnvironmentFile=/srv/cc-financial/shared/cloudflared.env
+ExecStart=/usr/local/bin/cloudflared tunnel --config /srv/cc-financial/cloudflare/config.yml run ${TUNNEL_NAME}
+Restart=always
+RestartSec=5
+StandardOutput=append:/srv/cc-financial/logs/cloudflared.log
+StandardError=append:/srv/cc-financial/logs/cloudflared.log
+
+[Install]
+WantedBy=multi-user.target

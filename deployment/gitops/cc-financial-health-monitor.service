@@ -1,0 +1,18 @@
+[Unit]
+Description=CC Financial Health Monitor
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=__RUN_USER__
+WorkingDirectory=/srv/cc-financial/current
+EnvironmentFile=/srv/cc-financial/shared/health-monitor.env
+ExecStart=/usr/bin/node /srv/cc-financial/current/deployment/health-monitor.js
+Restart=always
+RestartSec=10
+StandardOutput=append:/srv/cc-financial/logs/health-monitor.log
+StandardError=append:/srv/cc-financial/logs/health-monitor.log
+
+[Install]
+WantedBy=multi-user.target

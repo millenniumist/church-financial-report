@@ -1,0 +1,5 @@
+# name|compose_path|health_url|build_image|build_context|rollback_images|post_deploy_cmd
+app|deployment/docker-compose.selfhost.yml|http://localhost:8358/api/health|nextjs-app|.|nextjs-app|
+
+# Example additional stack (uncomment and provide compose file + health URL)
+# observability|deployment/docker-compose.observability.yml|http://localhost:5601/api/status|||elasticsearch,kibana| 
