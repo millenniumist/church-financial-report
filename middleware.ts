@@ -1,0 +1,73 @@
+import { NextResponse } from 'next/server';
+
+export async function middleware(request) {
+    const { pathname } = request.nextUrl;
+
+    // Skip internal paths, static files, and admin routes
+    if (
+        pathname.startsWith('/_next') ||
+        pathname.startsWith('/api') ||
+        pathname.startsWith('/admin') ||
+        pathname.includes('.') // file extensions
+    ) {
+        return NextResponse.next();
+    }
+
+    // Strategy: We can't easily query DB in Edge Middleware without specific setup.
+    // For robustness in this hybrid environment, we will optimisticly allow access
+    // if we can't verify, or we could use a specialized check.
+
+    // NOTE: Fetching from localhost in middleware is often problematic in Next.js
+    // because middleware runs before the request is routed.
+
+    // Alternative: If managing critical paths, we might perform the check
+    // in Layout or Page components, but Middleware is requested.
+
+    // Let's try to fetch from the API using absolute URL if possible.
+    // We need the origin.
+    const origin = request.nextUrl.origin;
+
+    try {
+        // Short timeout to avoid blocking regular navigation
+        const res = await fetch(`${origin}/api/admin/config/paths`, {
+            next: { revalidate: 60 },
+            signal: AbortSignal.timeout(1000)
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            const disabledPaths = data.paths || [];
+
+            // Exact match or sub-path match?
+            // Requirement implies "enable/disable each path", usually meaning the page itself.
+            // Let's assume strict equality or startsWith for sub-sections.
+            // For now, checking strict match for the configured path.
+
+            if (disabledPaths.includes(pathname)) {
+                // Path is disabled
+                // Rewrite to a 404 or maintenance page?
+                // Let's return a 404 for now as implied by "disable".
+                return NextResponse.rewrite(new URL('/404', request.url));
+            }
+        }
+    } catch (error) {
+        // If fetch checks fail (e.g. cold start), we default to allowing access (fail open)
+        // to prevent taking down the site.
+        // console.error('Middleware config check failed:', error);
+    }
+
+    return NextResponse.next();
+}
+
+export const config = {
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - api (API routes)
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         */
+        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    ],
+};
