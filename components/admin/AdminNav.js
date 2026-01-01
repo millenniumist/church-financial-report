@@ -25,7 +25,8 @@ export default function AdminNav() {
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/missions', label: 'Missions' },
     { href: '/admin/projects', label: 'Projects' },
-    { href: '/admin/bulletins', label: 'Bulletins' }
+    { href: '/admin/bulletins', label: 'Bulletins' },
+    { href: '/admin/config/paths', label: 'Path Access' }
   ];
 
   return (

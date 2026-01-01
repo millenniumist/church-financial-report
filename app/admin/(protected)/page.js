@@ -83,6 +83,12 @@ export default async function AdminDashboard() {
           >
             + New Project
           </Link>
+          <Link
+            href="/admin/config/paths"
+            className="px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-center font-medium"
+          >
+            Manage Path Access
+          </Link>
         </div>
       </div>
     </div>
