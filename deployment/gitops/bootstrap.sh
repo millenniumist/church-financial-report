@@ -8,6 +8,7 @@ RUN_USER="${RUN_USER:-$(id -un)}"
 INSTALL_DOCKER="${INSTALL_DOCKER:-true}"
 INSTALL_CLOUDFLARED="${INSTALL_CLOUDFLARED:-true}"
 ENABLE_WEBHOOK_SERVICE="${ENABLE_WEBHOOK_SERVICE:-true}"
+ENABLE_GITOPS_POLL_TIMER="${ENABLE_GITOPS_POLL_TIMER:-true}"
 ENABLE_HEALTH_MONITOR_SERVICE="${ENABLE_HEALTH_MONITOR_SERVICE:-false}"
 ENABLE_CLOUDFLARED_SERVICE="${ENABLE_CLOUDFLARED_SERVICE:-false}"
 
@@ -68,6 +69,7 @@ install_cloudflared() {
 setup_dirs() {
   log "creating $DEPLOY_DIR layout"
   sudo mkdir -p "$DEPLOY_DIR"/{bin,releases,shared,logs,rollbacks,cloudflare}
+  sudo mkdir -p "$DEPLOY_DIR/shared/content"
   sudo chown -R "$RUN_USER":"$RUN_USER" "$DEPLOY_DIR"
 }
 
@@ -75,6 +77,7 @@ install_gitops_files() {
   log "installing GitOps scripts"
   install -m 0755 "$REPO_ROOT/deployment/gitops/deploy.sh" "$DEPLOY_DIR/bin/deploy.sh"
   install -m 0755 "$REPO_ROOT/deployment/gitops/webhook.py" "$DEPLOY_DIR/bin/webhook.py"
+  install -m 0755 "$REPO_ROOT/deployment/gitops/poll.sh" "$DEPLOY_DIR/bin/poll.sh"
 
   if [ ! -f "$DEPLOY_DIR/shared/gitops.env" ]; then
     secret="$(python3 - <<'PY'\nimport secrets\nprint(secrets.token_hex(32))\nPY\n)"
@@ -100,6 +103,17 @@ install_services() {
       sudo tee /etc/systemd/system/cc-financial-webhook.service >/dev/null
     sudo systemctl daemon-reload
     sudo systemctl enable --now cc-financial-webhook
+  fi
+
+  if [ "$ENABLE_GITOPS_POLL_TIMER" = "true" ]; then
+    log "installing gitops poll timer"
+    sed "s|__RUN_USER__|$RUN_USER|g" \
+      "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll.service" | \
+      sudo tee /etc/systemd/system/cc-financial-gitops-poll.service >/dev/null
+    sudo install -m 0644 "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll.timer" \
+      /etc/systemd/system/cc-financial-gitops-poll.timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now cc-financial-gitops-poll.timer
   fi
 
   if [ "$ENABLE_HEALTH_MONITOR_SERVICE" = "true" ]; then

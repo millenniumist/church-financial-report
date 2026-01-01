@@ -14,6 +14,8 @@ ROLLBACK_MODE="${ROLLBACK_MODE:-all}"
 COMPOSE_PROJECT_PREFIX="${COMPOSE_PROJECT_PREFIX:-cc-financial}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-10}"
 HEALTH_DELAY_SECONDS="${HEALTH_DELAY_SECONDS:-3}"
+SYNC_SOURCE_DIR="${SYNC_SOURCE_DIR:-$DEPLOY_DIR/shared}"
+SYNC_PATHS="${SYNC_PATHS:-}"
 
 log() {
   printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" | tee -a "$LOG_DIR/deploy.log"
@@ -107,6 +109,31 @@ health_check() {
   return 1
 }
 
+sync_paths() {
+  [ -z "$SYNC_PATHS" ] && return 0
+
+  IFS=',' read -r -a paths <<< "$SYNC_PATHS"
+  for raw in "${paths[@]}"; do
+    local rel src dst
+    rel="$(trim "$raw")"
+    [ -z "$rel" ] && continue
+    src="$SYNC_SOURCE_DIR/$rel"
+    dst="$release_dir/$rel"
+
+    if [ -d "$src" ]; then
+      mkdir -p "$dst"
+      cp -a "$src/." "$dst/"
+      log "synced dir $rel"
+    elif [ -f "$src" ]; then
+      mkdir -p "$(dirname "$dst")"
+      cp -a "$src" "$dst"
+      log "synced file $rel"
+    else
+      log "sync source missing: $src"
+    fi
+  done
+}
+
 mkdir -p "$RELEASES_DIR" "$LOG_DIR" "$ROLLBACK_DIR"
 
 exec 9>"$DEPLOY_DIR/deploy.lock"
@@ -139,12 +166,15 @@ sha="$(git -C "$tmp_dir" rev-parse --short HEAD)"
 release_dir="$RELEASES_DIR/${timestamp}-${sha}"
 mv "$tmp_dir" "$release_dir"
 
+sync_paths
+
 stacks=()
 stack_compose=()
 stack_health=()
 stack_build_image=()
 stack_build_context=()
 stack_rollback_images=()
+stack_pre_cmd=()
 stack_post_cmd=()
 
 while IFS= read -r line || [ -n "$line" ]; do
@@ -153,13 +183,14 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in
     \#*) continue ;;
   esac
-  IFS='|' read -r name compose_path health_url build_image build_context rollback_images post_cmd <<< "$line"
+  IFS='|' read -r name compose_path health_url build_image build_context rollback_images pre_cmd post_cmd <<< "$line"
   name="$(trim "$name")"
   compose_path="$(trim "$compose_path")"
   health_url="$(trim "$health_url")"
   build_image="$(trim "$build_image")"
   build_context="$(trim "$build_context")"
   rollback_images="$(trim "$rollback_images")"
+  pre_cmd="$(trim "$pre_cmd")"
   post_cmd="$(trim "$post_cmd")"
 
   if [ -z "$name" ] || [ -z "$compose_path" ]; then
@@ -173,6 +204,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   stack_build_image+=("$build_image")
   stack_build_context+=("$build_context")
   stack_rollback_images+=("$rollback_images")
+  stack_pre_cmd+=("$pre_cmd")
   stack_post_cmd+=("$post_cmd")
 done < "$STACKS_FILE"
 
@@ -207,6 +239,7 @@ for i in "${!stacks[@]}"; do
   build_image="${stack_build_image[$i]}"
   build_context="${stack_build_context[$i]}"
   rollback_images="${stack_rollback_images[$i]}"
+  pre_cmd="${stack_pre_cmd[$i]}"
   post_cmd="${stack_post_cmd[$i]}"
 
   if [ -n "$build_image" ]; then
@@ -230,6 +263,11 @@ for i in "${!stacks[@]}"; do
       rollback_stack "$name" "$compose_path" "$build_image" "$rollback_images"
     fi
     exit 1
+  fi
+
+  if [ -n "$pre_cmd" ]; then
+    log "pre-deploy for $name"
+    bash -lc "$pre_cmd"
   fi
 
   log "deploying stack $name"

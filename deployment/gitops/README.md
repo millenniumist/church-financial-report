@@ -16,6 +16,7 @@ This folder contains a lightweight, push-driven GitOps setup for a Raspberry Pi 
 - `cc-financial-webhook.service`: Systemd service for the webhook listener.
 - `cc-financial-health-monitor.service`: Optional systemd service for the Node health monitor.
 - `cc-financial-cloudflared.service`: Optional systemd service for Cloudflare Tunnel.
+- `cc-financial-gitops-poll.service` / `cc-financial-gitops-poll.timer`: Polling fallback if webhook is unavailable.
 - `gitops.env.example`: Shared env for deploy + webhook.
 - `stacks.conf.example`: Stack definitions for multi-service deploys.
 - `cloudflared.env.example`: Cloudflared service env (tunnel name).
@@ -30,6 +31,7 @@ cd church-financial-report
 ```
 
 The script installs packages, creates `/srv/cc-financial`, installs services, and generates a webhook secret.
+It also enables a polling timer (every 2 minutes) as a fallback if the webhook is unavailable.
 
 ## Manual install (if you prefer)
 
@@ -68,19 +70,21 @@ sudo systemctl enable --now cc-financial-webhook
 `stacks.conf` format:
 
 ```
-name|compose_path|health_url|build_image|build_context|rollback_images|post_deploy_cmd
+name|compose_path|health_url|build_image|build_context|rollback_images|pre_deploy_cmd|post_deploy_cmd
 ```
 
 Example:
 
 ```
-app|deployment/docker-compose.selfhost.yml|http://localhost:8358/api/health|nextjs-app|.|nextjs-app|
+app|deployment/docker-compose.selfhost.yml|http://localhost:8358/api/health|nextjs-app|.|nextjs-app|docker rm -f nextjs-app|
 ```
 
 Notes:
 - `build_image` + `build_context` are optional. If set, the image is built before deploy.
 - `rollback_images` is a comma-separated list of images that should be tagged for rollback.
+- `pre_deploy_cmd` runs before Compose is applied (useful for cleaning old containers).
 - `post_deploy_cmd` runs after the stack is healthy.
+- `SYNC_PATHS` in `gitops.env` lets you copy shared files into each release (for example `content/site-data.json`).
 
 ## Rollback
 
