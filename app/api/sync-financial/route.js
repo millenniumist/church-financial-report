@@ -307,10 +307,12 @@ async function syncCategories(rows, year) {
   return { categoriesCreated, categoriesUpdated };
 }
 
-async function syncFinancialData() {
+async function syncFinancialData(spreadsheetId = null) {
   // Fetch data from Google Sheets
-  logger.info({ spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID }, 'Fetching data from Google Sheets');
-  const rows = await fetchSheetsData();
+  const targetId = spreadsheetId || process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+  logger.info({ spreadsheetId: targetId }, 'Fetching data from Google Sheets');
+  
+  const rows = await fetchSheetData('Monthly', 'AF:AZ', targetId);
   logger.info({ rowsCount: rows?.length || 0 }, 'Data fetched from Google Sheets');
 
   const monthlyRecords = parseMonthlyData(rows);
@@ -476,11 +478,14 @@ function verifyAuth(request) {
 export async function GET(request) {
   const startTime = Date.now();
   const requestId = `sync_${Date.now()}`;
+  const { searchParams } = new URL(request.url);
+  const spreadsheetId = searchParams.get('spreadsheetId');
 
   logger.info({
     requestId,
     method: 'GET',
     endpoint: '/api/sync-financial',
+    spreadsheetId,
     userAgent: request.headers.get('user-agent')
   }, 'Financial sync started');
 
@@ -494,17 +499,17 @@ export async function GET(request) {
       );
     }
 
-    logger.info({ requestId }, 'Starting financial data sync');
-    const result = await syncFinancialData();
+    logger.info({ requestId, spreadsheetId }, 'Starting financial data sync');
+    const result = await syncFinancialData(spreadsheetId);
 
     const duration = Date.now() - startTime;
     logger.info({
       requestId,
       duration: `${duration}ms`,
-      created: result.created,
-      updated: result.updated,
-      skipped: result.skipped,
-      total: result.total
+      created: result.records.created,
+      updated: result.records.updated,
+      skipped: result.records.skipped,
+      total: result.records.total
     }, 'Financial sync completed successfully');
 
     return NextResponse.json(result);
@@ -537,10 +542,21 @@ export async function POST(request) {
   const startTime = Date.now();
   const requestId = `sync_${Date.now()}`;
 
+  let spreadsheetId = null;
+  try {
+    const body = await request.json();
+    spreadsheetId = body?.spreadsheetId;
+  } catch (e) {
+    // Body might be empty or not JSON, fallback to query params
+    const { searchParams } = new URL(request.url);
+    spreadsheetId = searchParams.get('spreadsheetId');
+  }
+
   logger.info({
     requestId,
     method: 'POST',
     endpoint: '/api/sync-financial',
+    spreadsheetId,
     userAgent: request.headers.get('user-agent')
   }, 'Financial sync started');
 
@@ -554,17 +570,17 @@ export async function POST(request) {
       );
     }
 
-    logger.info({ requestId }, 'Starting financial data sync');
-    const result = await syncFinancialData();
+    logger.info({ requestId, spreadsheetId }, 'Starting financial data sync');
+    const result = await syncFinancialData(spreadsheetId);
 
     const duration = Date.now() - startTime;
     logger.info({
       requestId,
       duration: `${duration}ms`,
-      created: result.created,
-      updated: result.updated,
-      skipped: result.skipped,
-      total: result.total
+      created: result.records.created,
+      updated: result.records.updated,
+      skipped: result.records.skipped,
+      total: result.records.total
     }, 'Financial sync completed successfully');
 
     return NextResponse.json(result);
