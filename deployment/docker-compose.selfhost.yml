@@ -21,6 +21,7 @@ services:
       - "8358:8358"
     volumes:
       - bulletins-data:/app/bulletins
+      - ../privatekey-gsheet.json:/app/privatekey-gsheet.json
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
