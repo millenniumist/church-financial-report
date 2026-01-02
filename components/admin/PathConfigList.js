@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { addPath, togglePath, deletePath } from '@/app/admin/(protected)/config/paths/actions';
 import { useRouter } from 'next/navigation';
 
-export default function PathConfigList({ paths }) {
+export default function PathConfigList({ paths, availablePaths = [] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [newPath, setNewPath] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,34 +50,45 @@ export default function PathConfigList({ paths }) {
     }
   }
 
+  // Filter out paths that are already configured
+  const unconfiguredPaths = availablePaths.filter(
+    path => !paths.some(p => p.path === path)
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm font-medium"
+          disabled={unconfiguredPaths.length === 0 && !isAdding}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isAdding ? 'Cancel' : '+ Add Path'}
+          {isAdding ? 'Cancel' : '+ Add Path Rule'}
         </button>
       </div>
 
       {isAdding && (
         <form onSubmit={handleAdd} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
           <div className="flex gap-4">
-            <input
-              type="text"
+            <select
               value={newPath}
               onChange={(e) => setNewPath(e.target.value)}
-              placeholder="/example/path"
               className="flex-1 px-3 py-2 border rounded-md"
               required
-            />
+            >
+              <option value="">Select a path...</option>
+              {unconfiguredPaths.map((path) => (
+                <option key={path} value={path}>
+                  {path}
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !newPath}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
             >
-              {loading ? 'Adding...' : 'Save'}
+              {loading ? 'Adding...' : 'Save Rule'}
             </button>
           </div>
         </form>

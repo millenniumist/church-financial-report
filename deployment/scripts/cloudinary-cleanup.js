@@ -76,35 +76,53 @@ async function getReferencedUrls() {
  * Extract public_id from Cloudinary URL
  */
 function extractPublicId(url) {
-  // Example: https://res.cloudinary.com/demo/image/upload/v1234567890/church-cms/abc123.jpg
-  // Returns: church-cms/abc123
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.*?)(?:\.[^.]+)?$/);
+  if (!url) return null;
+  
+  // Handles /upload/, /raw/upload/, etc.
+  // For 'raw' resources, Cloudinary includes the extension in the public_id
+  const isRaw = url.includes('/raw/upload/');
+  
+  if (isRaw) {
+    const match = url.match(/\/raw\/upload\/(?:v\d+\/)?(.*?)$/);
+    return match ? match[1] : url;
+  }
+  
+  const match = url.match(/\/(?:image|video)\/upload\/(?:v\d+\/)?(.*?)(?:\.[^.]+)?$/);
   return match ? match[1] : url;
 }
 
 /**
- * Get all resources from Cloudinary folder
+ * Get all resources from Cloudinary folder (images and raw files)
  */
 async function getCloudinaryResources() {
-  console.log('☁️  Fetching all resources from Cloudinary...\n');
+  console.log('☁️  Fetching all resources from Cloudinary (images and raw)...\n');
 
-  const resources = [];
-  let nextCursor = null;
+  const resourceTypes = ['image', 'raw'];
+  const allResources = [];
 
-  do {
-    const result = await cloudinary.api.resources({
-      type: 'upload',
-      prefix: CONFIG.FOLDER,
-      max_results: 500,
-      next_cursor: nextCursor,
-    });
+  for (const type of resourceTypes) {
+    let nextCursor = null;
+    let typeCount = 0;
+    
+    do {
+      const result = await cloudinary.api.resources({
+        type: 'upload',
+        prefix: CONFIG.FOLDER,
+        max_results: 500,
+        next_cursor: nextCursor,
+        resource_type: type,
+      });
 
-    resources.push(...result.resources);
-    nextCursor = result.next_cursor;
-  } while (nextCursor);
+      allResources.push(...result.resources.map(r => ({ ...r, resource_type: type })));
+      nextCursor = result.next_cursor;
+      typeCount += result.resources.length;
+    } while (nextCursor);
+    
+    console.log(`  • Found ${typeCount} ${type} files`);
+  }
 
-  console.log(`✓ Found ${resources.length} files in Cloudinary\n`);
-  return resources;
+  console.log(`\n✓ Total found: ${allResources.length} files in Cloudinary\n`);
+  return allResources;
 }
 
 /**
@@ -158,6 +176,7 @@ async function cleanup() {
       if (!isReferenced && age > CONFIG.ORPHAN_AGE_DAYS) {
         toDelete.orphaned.push({
           publicId,
+          resourceType: file.resource_type,
           age,
           size: (file.bytes / 1024).toFixed(2) + ' KB',
           created: file.created_at,
@@ -168,6 +187,7 @@ async function cleanup() {
       if (!isReferenced && age > CONFIG.RETENTION_DAYS) {
         toDelete.old.push({
           publicId,
+          resourceType: file.resource_type,
           age,
           size: (file.bytes / 1024).toFixed(2) + ' KB',
           created: file.created_at,
@@ -241,19 +261,22 @@ async function cleanup() {
         console.log('⚠️  DELETING FILES...\n');
 
         const allToDelete = [...toDelete.orphaned, ...toDelete.old]
-          .map(f => f.publicId)
-          .filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
+          .filter((file, index, self) => 
+            index === self.findIndex((f) => f.publicId === file.publicId)
+          ); // Remove duplicates
 
         let deleted = 0;
         let failed = 0;
 
-        for (const publicId of allToDelete) {
+        for (const file of allToDelete) {
           try {
-            await cloudinary.uploader.destroy(publicId);
-            console.log(`  ✓ Deleted: ${publicId}`);
+            await cloudinary.uploader.destroy(file.publicId, {
+              resource_type: file.resourceType
+            });
+            console.log(`  ✓ Deleted [${file.resourceType}]: ${file.publicId}`);
             deleted++;
           } catch (error) {
-            console.error(`  ✗ Failed to delete ${publicId}: ${error.message}`);
+            console.error(`  ✗ Failed to delete ${file.publicId}: ${error.message}`);
             failed++;
           }
         }

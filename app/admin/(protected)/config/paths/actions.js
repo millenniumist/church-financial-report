@@ -54,3 +54,17 @@ export async function deletePath(id) {
     return { error: 'Failed to delete path' };
   }
 }
+
+export async function getAvailablePaths() {
+  // Common public paths in the application
+  return [
+    '/about',
+    '/bulletins',
+    '/contact',
+    '/financial',
+    '/ministries',
+    '/missions',
+    '/projects',
+    '/worship',
+  ];
+}

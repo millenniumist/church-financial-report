@@ -1,14 +1,18 @@
 import { prisma } from '@/lib/prisma';
 import PathConfigList from '@/components/admin/PathConfigList';
+import { getAvailablePaths } from './actions';
 
 export const metadata = {
   title: 'Path Configuration | Admin',
 };
 
 export default async function PathConfigPage() {
-  const paths = await prisma.pathConfig.findMany({
-    orderBy: { path: 'asc' },
-  });
+  const [paths, availablePaths] = await Promise.all([
+    prisma.pathConfig.findMany({
+      orderBy: { path: 'asc' },
+    }),
+    getAvailablePaths()
+  ]);
 
   return (
     <div className="space-y-8">
@@ -19,7 +23,7 @@ export default async function PathConfigPage() {
           </p>
         </div>
 
-      <PathConfigList paths={paths} />
+      <PathConfigList paths={paths} availablePaths={availablePaths} />
     </div>
   );
 }

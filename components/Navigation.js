@@ -31,25 +31,60 @@ export default function Navigation() {
     let cancelled = false;
 
     async function loadNavigation() {
+      console.log('--- loadNavigation starting ---');
       try {
-        const response = await fetch('/api/navigation?locale=th');
-        if (!response.ok) {
-          throw new Error('Failed to load navigation items');
-        }
-        const data = await response.json();
-        if (!cancelled && Array.isArray(data.items) && data.items.length) {
-          setNavItems(
-            data.items.map((item) => ({
+        // Load settings and navigation in parallel
+        const [navRes, configRes] = await Promise.all([
+          fetch('/api/navigation?locale=th'),
+          fetch('/api/admin/config/paths')
+        ]);
+
+        const configData = configRes.ok ? await configRes.json() : { paths: [] };
+        const disabledPaths = configData.paths || [];
+        console.log('disabledPaths:', disabledPaths);
+
+        let itemsToFilter = DEFAULT_NAV_ITEMS;
+
+        if (navRes.ok) {
+          const navData = await navRes.json();
+          console.log('navData fetched:', navData);
+          if (Array.isArray(navData.items) && navData.items.length) {
+            itemsToFilter = navData.items.map((item) => ({
               id: item.id,
               name: item.label ?? item.href,
               href: item.href,
-            }))
+            }));
+          }
+        }
+
+        if (!cancelled) {
+          console.log('itemsToFilter before filter:', itemsToFilter);
+          const filteredItems = itemsToFilter.filter(
+            item => !disabledPaths.some(dp => item.href === dp || item.href.startsWith(`${dp}/`))
           );
+          console.log('filteredItems:', filteredItems);
+          setNavItems(filteredItems);
         }
       } catch (error) {
-        console.warn('Navigation fallback to defaults', error);
+        console.warn('Navigation load error', error);
+        
+        // Even in error, try to fetch config to filter defaults
         if (!cancelled) {
-          setNavItems(DEFAULT_NAV_ITEMS);
+          try {
+            const configRes = await fetch("/api/admin/config/paths");
+            if (configRes.ok) {
+              const configData = await configRes.json();
+              const disabledPaths = configData.paths || [];
+              const filteredDefaults = DEFAULT_NAV_ITEMS.filter(
+                item => !disabledPaths.some(dp => item.href === dp || item.href.startsWith(`${dp}/`))
+              );
+              setNavItems(filteredDefaults);
+            } else {
+              setNavItems(DEFAULT_NAV_ITEMS);
+            }
+          } catch (e) {
+            setNavItems(DEFAULT_NAV_ITEMS);
+          }
         }
       }
     }

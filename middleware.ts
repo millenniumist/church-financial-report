@@ -31,29 +31,28 @@ export async function middleware(request) {
         // Short timeout to avoid blocking regular navigation
         const res = await fetch(`${origin}/api/admin/config/paths`, {
             next: { revalidate: 60 },
-            signal: AbortSignal.timeout(1000)
+            signal: AbortSignal.timeout(1500) // Increased timeout slightly
         });
 
         if (res.ok) {
             const data = await res.json();
             const disabledPaths = data.paths || [];
 
-            // Exact match or sub-path match?
-            // Requirement implies "enable/disable each path", usually meaning the page itself.
-            // Let's assume strict equality or startsWith for sub-sections.
-            // For now, checking strict match for the configured path.
+            // Check if current path starts with any disabled path
+            // e.g. if '/worship' is disabled, '/worship/teams' should also be disabled
+            const isBlocked = disabledPaths.some(disabledPath =>
+                pathname === disabledPath || pathname.startsWith(`${disabledPath}/`)
+            );
 
-            if (disabledPaths.includes(pathname)) {
+            if (isBlocked) {
                 // Path is disabled
-                // Rewrite to a 404 or maintenance page?
-                // Let's return a 404 for now as implied by "disable".
                 return NextResponse.rewrite(new URL('/404', request.url));
             }
         }
     } catch (error) {
         // If fetch checks fail (e.g. cold start), we default to allowing access (fail open)
         // to prevent taking down the site.
-        // console.error('Middleware config check failed:', error);
+        console.error('Middleware config check failed:', error);
     }
 
     return NextResponse.next();

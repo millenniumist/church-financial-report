@@ -7,6 +7,7 @@ BRANCH="${BRANCH:-main}"
 RELEASES_DIR="${RELEASES_DIR:-$DEPLOY_DIR/releases}"
 SHARED_ENV="${SHARED_ENV:-$DEPLOY_DIR/shared/.env}"
 LOG_DIR="${LOG_DIR:-$DEPLOY_DIR/logs}"
+BUILD_LOG="${BUILD_LOG:-$LOG_DIR/build.log}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
 STACKS_FILE="${STACKS_FILE:-$DEPLOY_DIR/shared/stacks.conf}"
 ROLLBACK_DIR="${ROLLBACK_DIR:-$DEPLOY_DIR/rollbacks}"
@@ -249,7 +250,11 @@ for i in "${!stacks[@]}"; do
       build_context="$release_dir/$build_context"
     fi
     log "building image $build_image:latest (stack $name)"
-    docker build -t "$build_image:latest" "$build_context"
+    {
+      printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "build start: $build_image ($name)"
+    } >> "$BUILD_LOG"
+    BUILDKIT_PROGRESS=plain docker build -t "$build_image:latest" "$build_context" 2>&1 | tee -a "$BUILD_LOG"
+    printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "build done: $build_image ($name)" >> "$BUILD_LOG"
   fi
 
   compose_file="$release_dir/$compose_path"

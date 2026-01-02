@@ -17,6 +17,7 @@ This folder contains a lightweight, push-driven GitOps setup for a Raspberry Pi 
 - `cc-financial-health-monitor.service`: Optional systemd service for the Node health monitor.
 - `cc-financial-cloudflared.service`: Optional systemd service for Cloudflare Tunnel.
 - `cc-financial-gitops-poll.service` / `cc-financial-gitops-poll.timer`: Polling fallback if webhook is unavailable.
+- `watch-deploy.sh`: Live deploy + build log watcher for the Pi.
 - `gitops.env.example`: Shared env for deploy + webhook.
 - `stacks.conf.example`: Stack definitions for multi-service deploys.
 - `cloudflared.env.example`: Cloudflared service env (tunnel name).

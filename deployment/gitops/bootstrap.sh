@@ -78,6 +78,7 @@ install_gitops_files() {
   install -m 0755 "$REPO_ROOT/deployment/gitops/deploy.sh" "$DEPLOY_DIR/bin/deploy.sh"
   install -m 0755 "$REPO_ROOT/deployment/gitops/webhook.py" "$DEPLOY_DIR/bin/webhook.py"
   install -m 0755 "$REPO_ROOT/deployment/gitops/poll.sh" "$DEPLOY_DIR/bin/poll.sh"
+  install -m 0755 "$REPO_ROOT/deployment/gitops/watch-deploy.sh" "$DEPLOY_DIR/bin/watch-deploy.sh"
 
   if [ ! -f "$DEPLOY_DIR/shared/gitops.env" ]; then
     secret="$(python3 - <<'PY'\nimport secrets\nprint(secrets.token_hex(32))\nPY\n)"
