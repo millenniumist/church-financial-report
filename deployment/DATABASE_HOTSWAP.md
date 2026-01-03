@@ -263,14 +263,22 @@ npm run db:sync
 
 ### 2. Scheduled Sync (Cron)
 
-For automatic "push" from Pi to Cloud, schedule the sync tool on the Pi:
+For automatic "push" from Pi to Cloud, schedule the sync tool on the Pi to run daily at **2 AM Bangkok time**:
 
+**Using the setup script:**
+```bash
+# On your Pi
+chmod +x ./deployment/scripts/setup-db-sync-cron.sh
+./deployment/scripts/setup-db-sync-cron.sh
+```
+
+**Manual crontab entry:**
 ```bash
 # Open crontab
 crontab -e
 
-# Add a task to sync every 6 hours (at the start of the hour)
-0 */6 * * * cd /srv/cc-financial/current && /usr/bin/npm run db:sync >> /srv/cc-financial/logs/db-sync.log 2>&1
+# Add a task to sync daily at 2:00 AM
+0 2 * * * cd /srv/cc-financial/current && /usr/bin/npm run db:sync >> /srv/cc-financial/logs/db-sync.log 2>&1
 ```
 
 ### 3. Verification Commands
