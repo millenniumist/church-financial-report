@@ -62,6 +62,7 @@ next-env.d.ts
 # Deployment configuration (deployment/config.sh contains local paths)
 deployment/config.sh
 deployment/.env
+deployment/.env.deploy
 
 # Cloudflare tunnel credentials in deployment directory
 deployment/cloudflare/*.json

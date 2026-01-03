@@ -2,15 +2,18 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="$ROOT_DIR/deployment/.env"
-CONFIG_FILE="$ROOT_DIR/deployment/config.sh"
-
-if [ ! -f "$ENV_FILE" ]; then
-  echo "missing $ENV_FILE" >&2
+# Look for deployment config in various locations
+if [ -f "$ROOT_DIR/deployment/gitops/gitops.env" ]; then
+  ENV_FILE="$ROOT_DIR/deployment/gitops/gitops.env"
+elif [ -f "$ROOT_DIR/deployment/.env.deploy" ]; then
+  ENV_FILE="$ROOT_DIR/deployment/.env.deploy"
+else
+  # Fallback to defaults or prompt? For now, we'll expect one of these.
+  echo "Missing deployment environment file (deployment/gitops/gitops.env or deployment/.env.deploy)" >&2
   exit 1
 fi
 
-# Load remote host configuration (handle spaces around =)
+# Load configuration
 while IFS= read -r line || [ -n "$line" ]; do
   [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
   if [[ "$line" =~ ^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*=[[:space:]]*(.+)[[:space:]]*$ ]]; then
@@ -21,15 +24,6 @@ while IFS= read -r line || [ -n "$line" ]; do
     export "$key=$value"
   fi
 done < "$ENV_FILE"
-
-: "${hostIp:?hostIp must be set in deployment/.env}"
-: "${username:?username must be set in deployment/.env}"
-
-# Optional config for SSH_DOMAIN
-if [ -f "$CONFIG_FILE" ]; then
-  # shellcheck disable=SC1090
-  source "$CONFIG_FILE"
-fi
 
 if ! command -v sshpass >/dev/null 2>&1; then
   echo "sshpass is required (brew install hudochenkov/sshpass/sshpass)" >&2
