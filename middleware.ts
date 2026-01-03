@@ -24,12 +24,12 @@ export async function middleware(request) {
     // in Layout or Page components, but Middleware is requested.
 
     // Let's try to fetch from the API using absolute URL if possible.
-    // We need the origin.
-    const origin = request.nextUrl.origin;
+    // Use an internal URL if configured to avoid public loopback issues.
+    const internalApiUrl = process.env.INTERNAL_API_URL || request.nextUrl.origin;
 
     try {
         // Short timeout to avoid blocking regular navigation
-        const res = await fetch(`${origin}/api/admin/config/paths`, {
+        const res = await fetch(`${internalApiUrl}/api/admin/config/paths`, {
             next: { revalidate: 60 },
             signal: AbortSignal.timeout(1500) // Increased timeout slightly
         });
@@ -52,7 +52,10 @@ export async function middleware(request) {
     } catch (error) {
         // If fetch checks fail (e.g. cold start), we default to allowing access (fail open)
         // to prevent taking down the site.
-        console.error('Middleware config check failed:', error);
+        // Log sparingly to avoid log bloat if internal URL is failing
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Middleware config check failed:', error.message);
+        }
     }
 
     return NextResponse.next();
