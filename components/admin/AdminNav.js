@@ -26,6 +26,7 @@ export default function AdminNav() {
     { href: '/admin/missions', label: 'Missions' },
     { href: '/admin/projects', label: 'Projects' },
     { href: '/admin/bulletins', label: 'Bulletins' },
+    { href: '/admin/feedback', label: 'Feedback' },
     { href: '/admin/config/paths', label: 'Path Access' }
   ];
 
@@ -43,7 +44,7 @@ export default function AdminNav() {
                   key={item.href}
                   href={item.href}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                    pathname === item.href || pathname.startsWith(`${item.href}/`)
+                    (item.href === '/admin' ? pathname === '/admin' : pathname === item.href || pathname.startsWith(`${item.href}/`))
                       ? 'bg-primary text-white'
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}

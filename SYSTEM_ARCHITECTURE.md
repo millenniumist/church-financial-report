@@ -7,7 +7,7 @@ This document provides a comprehensive overview of the cc-financial system archi
 ## Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 15.5.3 with React 19.1.0
+- **Framework**: Next.js 16.0.7 with React 19.2.1
 - **Styling**: Tailwind CSS v4.1.16
 - **UI Components**: Radix UI components
 - **Animations**: Framer Motion v12.23.24
@@ -49,6 +49,7 @@ The system uses PostgreSQL with the following core models:
 ### Supporting Models
 - **FinancialCategory**: Income/expense categories with visibility settings
 - **CategorySettings**: Year-specific category configurations
+- **PathConfig**: Dynamic route enablement/disablement configuration
 
 All models include standard audit fields (createdAt, updatedAt) and use CUID for primary keys.
 
@@ -64,6 +65,7 @@ All models include standard audit fields (createdAt, updatedAt) and use CUID for
 ### API Endpoints
 - **Public APIs**:
   - `/api/financial-data`: Financial overview with caching
+  - `/api/categories`: Financial categories listing
   - `/api/projects`: Project listings
   - `/api/missions`: Mission content
   - `/api/bulletins`: Bulletin management
@@ -74,6 +76,7 @@ All models include standard audit fields (createdAt, updatedAt) and use CUID for
 
 - **Admin APIs**:
   - `/api/admin/*`: CRUD operations for all models
+  - `/api/admin/config/paths`: Route configuration management
   - `/api/admin/login/logout`: Authentication
   - `/api/admin/upload`: File uploads to Cloudinary
 
@@ -116,7 +119,19 @@ All models include standard audit fields (createdAt, updatedAt) and use CUID for
 - **Features**: Structured logging, search, and analytics
 - **Optional**: Can be disabled for simpler deployments
 
-## Deployment Architecture
+### Deployment Architecture
+
+### GitOps Deployment (Push-Driven)
+- **Mechanism**: GitHub webhook triggers deployment on Raspberry Pi
+- **Components**:
+  - `webhook.py`: Listens for GitHub push events
+  - `deploy.sh`: Orchestrates build and deployment
+  - `bootstrap.sh`: One-time server provisioning
+- **Features**:
+  - **Versioned Releases**: Deploys to timestamped folders
+  - **Multi-Stack Support**: Configurable via `stacks.conf`
+  - **Automatic Rollback**: Reverts to previous release on failure
+  - **Polling Fallback**: Background timer checks for updates if webhook fails
 
 ### Containerization
 - **Multi-stage Docker build**:
@@ -125,10 +140,6 @@ All models include standard audit fields (createdAt, updatedAt) and use CUID for
   - Runner stage: Production runtime with non-root user
 
 - **Docker Compose Setup**:
-  - Single service deployment
-  - Volume mounts for persistent data (bulletins)
-  - Environment variable configuration
-  - Network isolation
 
 ### Infrastructure Features
 - **Health Monitoring**: Automated health checks with Discord notifications and MQTT publishing
@@ -830,6 +841,11 @@ ELASTICSEARCH_NODE=http://localhost:9200
 # Remote Access
 ENABLE_TAILSCALE=false
 TAILSCALE_AUTH_KEY=****  # Optional pre-auth key
+
+# GitOps (Deployment)
+WEBHOOK_SECRET=****      # Secret for GitHub webhook signature
+ROLLBACK_MODE=failed     # 'failed' or 'all'
+SYNC_PATHS=content/site-data.json # Files to persist across deploys
 ```
 
 ## Centralized Logging with Elasticsearch
@@ -1113,10 +1129,11 @@ sequenceDiagram
 - **Shared Components**: Page wrapper, animated sections
 
 ### Key Components
-- **FinancialCharts**: Recharts-based visualizations
+- **FinancialCharts**: Recharts-based visualizations (`IncomeChartSection`, `ExpenseChartSection`, `MonthlyTrendChartSection`)
 - **ImageCarousel**: Cloudinary-powered image galleries
 - **AdminPanel**: Complete admin interface
 - **ShaderBackground**: Three.js background effects
+- **LightweightBackground**: CSS-based performant alternative background
 
 ## Security Considerations
 

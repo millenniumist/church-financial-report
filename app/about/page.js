@@ -1,6 +1,14 @@
 import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 import StickyNav from '@/components/landing/StickyNav';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export const metadata = genMetadata({
   title: 'เกี่ยวกับเรา',
@@ -176,7 +184,7 @@ export default function AboutPage() {
       </section>
 
       {/* Leadership */}
-      <section className="py-20 sm:py-24">
+      <section className="py-20 sm:py-24 bg-slate-50/50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-block">
@@ -188,22 +196,47 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <Card className="p-8 sm:p-12 bg-primary/5 border-primary/20">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-2xl font-semibold">ผู้นำอาวุโส</h3>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  คณะผู้นำและอาจารย์ของคริสตจักรพร้อมรับใช้และอภิบาลคริสตจักร
-                </p>
-                <p className="text-sm text-muted-foreground italic">
-                  สามารถติดต่อผู้นำคริสตจักรได้ที่หน้าติดต่อเรา
-                </p>
-              </div>
+          <Card className="overflow-hidden border-0 shadow-xl">
+            <Table>
+              <TableHeader className="bg-primary/5">
+                <TableRow>
+                  <TableHead className="w-[100px] text-center">ลำดับ</TableHead>
+                  <TableHead>ชื่อ-นามสกุล</TableHead>
+                  <TableHead>ตำแหน่ง</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-center font-medium">1</TableCell>
+                  <TableCell>อ.ปฐมพร สิงห์คำป้อง</TableCell>
+                  <TableCell>ศิษยาภิบาล</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-center font-medium">2</TableCell>
+                  <TableCell>อ.จันทรา ตันสกุล</TableCell>
+                  <TableCell>ศาสนาจารย์</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-center font-medium">3</TableCell>
+                  <TableCell>อ.เสารว์ณีย์ อิ่มใจกล้า</TableCell>
+                  <TableCell>อนุศาสนาจารย์</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-center font-medium">4</TableCell>
+                  <TableCell>อาจารย์ เจษฎา ต่อมแก้ว</TableCell>
+                  <TableCell>อาจารย์</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-center font-medium">5</TableCell>
+                  <TableCell>อาจารย์ ชิโร</TableCell>
+                  <TableCell>อาจารย์</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <div className="p-6 bg-slate-50/50 border-t">
+              <p className="text-sm text-muted-foreground italic text-center">
+                สามารถติดต่อผู้นำคริสตจักรได้ที่หน้าติดต่อเรา
+              </p>
             </div>
           </Card>
         </div>

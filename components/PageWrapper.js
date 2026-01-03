@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import AdminPanel from './AdminPanel';
+import FloatingFeedback from './contact/FloatingFeedback';
 
 export default function PageWrapper({ children }) {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -41,6 +42,7 @@ export default function PageWrapper({ children }) {
         {children}
       </div>
       <AdminPanel isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
+      <FloatingFeedback />
     </>
   );
 }

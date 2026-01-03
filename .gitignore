@@ -77,3 +77,6 @@ deployment/cloudflared.log
 
 # Database dumps
 pi-data-dump.json
+
+.gemini/
+gha-creds-*.json

@@ -6,19 +6,25 @@ async function getStats() {
     missionsCount,
     projectsCount,
     activeMissions,
-    activeProjects
+    activeProjects,
+    newFeedbackCount,
+    totalFeedbackCount
   ] = await Promise.all([
     prisma.mission.count(),
     prisma.futureProject.count(),
     prisma.mission.count({ where: { pinned: true } }),
-    prisma.futureProject.count({ where: { isActive: true } })
+    prisma.futureProject.count({ where: { isActive: true } }),
+    prisma.feedback.count({ where: { status: 'NEW' } }),
+    prisma.feedback.count()
   ]);
 
   return {
     missionsCount,
     projectsCount,
     activeMissions,
-    activeProjects
+    activeProjects,
+    newFeedbackCount,
+    totalFeedbackCount
   };
 }
 
@@ -39,6 +45,13 @@ export default async function AdminDashboard() {
       description: `${stats.activeProjects} active`,
       link: '/admin/projects',
       icon: '📊'
+    },
+    {
+      title: 'Feedback',
+      count: stats.totalFeedbackCount,
+      description: `${stats.newFeedbackCount} new messages`,
+      link: '/admin/feedback',
+      icon: '💬'
     }
   ];
 
@@ -88,6 +101,12 @@ export default async function AdminDashboard() {
             className="px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-center font-medium"
           >
             Manage Path Access
+          </Link>
+          <Link
+            href="/admin/feedback"
+            className="px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-center font-medium"
+          >
+            View Feedback
           </Link>
         </div>
       </div>

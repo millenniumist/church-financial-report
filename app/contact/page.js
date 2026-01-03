@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import { generateMetadata as genMetadata } from '@/lib/seo';
 import { getContactInfo } from '@/lib/contact-info';
 import StickyNav from '@/components/landing/StickyNav';
+import FeedbackForm from '@/components/contact/FeedbackForm';
 
 // Force dynamic rendering to avoid database access during build
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,17 @@ export default async function ContactPage() {
             <div className="inline-block"><div className="h-px w-16 bg-primary mx-auto mb-6" /></div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">ติดต่อเรา</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">เรายินดีที่จะได้ยินจากคุณ</p>
+            <div className="pt-4">
+              <a
+                href="#feedback-section"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition font-semibold"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                แสดงความคิดเห็น
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -219,6 +231,18 @@ export default async function ContactPage() {
         </div>
       </section>
 
+      {/* Feedback Section */}
+      <section id="feedback-section" className="py-20 sm:py-24 bg-slate-50/50 scroll-mt-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-block"><div className="h-px w-12 bg-primary mx-auto mb-4" /></div>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">แสดงความคิดเห็น</h2>
+            <p className="text-muted-foreground text-lg">เราให้ความสำคัญกับความคิดเห็นของคุณ เพื่อการพัฒนาที่ดียิ่งขึ้น</p>
+          </div>
+          <FeedbackForm />
+        </div>
+      </section>
+
       {/* Prayer Request */}
       <section className="py-20 sm:py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -229,7 +253,7 @@ export default async function ContactPage() {
           </div>
           <h2 className="text-3xl font-bold mb-4">คำขออธิษฐาน</h2>
           <p className="text-muted-foreground text-lg mb-6">หากคุณต้องการให้คริสตจักรอธิษฐานเผื่อคุณ กรุณาติดต่อผู้นำคริสตจักรหรือแจ้งในวันนมัสการ</p>
-          <p className="text-sm text-muted-foreground italic">&ldquo;คำอธิษฐานของคนชอบธรรมมีพลังมาก&rdquo; - ยากอบ 5:16</p>
+          <p className="text-sm text-muted-foreground italic">&ldquo;คำอธิษฐานของคนชอบธรรมมีพลังทำให้เกิดผล&rdquo; - ยากอบ 5:16</p>
         </div>
       </section>
 
