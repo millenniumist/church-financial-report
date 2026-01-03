@@ -242,47 +242,44 @@ DB_PRIMARY_RETRY_INTERVAL=120000   # Retry every 2 minutes (default)
 
 ## Data Synchronization
 
-### Important: Keep Databases in Sync
+To ensure the hot-swap system is effective, data must be synchronized from the primary (Pi) to the secondary (Cloud) database.
 
-The hot-swap system does **NOT** automatically sync data between databases. You must handle synchronization:
+### 1. The Sync Tool (Pi → Cloud)
 
-### Option 1: Read Replica (Recommended)
+The application includes a specialized synchronization script that dumps data from the Pi and loads it into the secondary database.
 
-Configure your secondary as a read replica of the primary:
-
-**PostgreSQL Replication:**
-```sql
--- On primary
-CREATE PUBLICATION cc_financial_pub FOR ALL TABLES;
-
--- On secondary
-CREATE SUBSCRIPTION cc_financial_sub
-CONNECTION 'postgresql://ccfinapp:password@primary-host:5432/cc_financial'
-PUBLICATION cc_financial_pub;
+**Run a full sync manually:**
+```bash
+# On your Pi
+npm run db:sync
 ```
 
-### Option 2: Manual Sync
+**What it does:**
+1. Connects to the Pi Local DB.
+2. Dumps all managed tables (Financial Records, Missions, Bulletins, etc.).
+3. Connects to `DATABASE_URL_SECONDARY`.
+4. Deletes existing records on the secondary and replaces them with Pi data.
+5. Verifies record counts on both ends.
 
-Periodically backup primary and restore to secondary:
+### 2. Scheduled Sync (Cron)
+
+For automatic "push" from Pi to Cloud, schedule the sync tool on the Pi:
 
 ```bash
-# Backup primary
-pg_dump -h localhost -U ccfinapp cc_financial > backup.sql
+# Open crontab
+crontab -e
 
-# Restore to secondary
-psql -h backup-host -U user cc_financial < backup.sql
+# Add a task to sync every 6 hours (at the start of the hour)
+0 */6 * * * cd /srv/cc-financial/current && /usr/bin/npm run db:sync >> /srv/cc-financial/logs/db-sync.log 2>&1
 ```
 
-### Option 3: Application-Level Sync
+### 3. Verification Commands
 
-Write to both databases (not recommended for production):
+You can check the synchronization status across all databases at any time:
 
-```javascript
-// Example: dual-write pattern
-await Promise.all([
-  primaryPrisma.user.create({ data }),
-  secondaryPrisma.user.create({ data })
-]);
+```bash
+# Check record counts on Pi, DEV, and SECONDARY
+npm run db:sync status
 ```
 
 ## Testing
