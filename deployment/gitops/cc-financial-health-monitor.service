@@ -8,6 +8,7 @@ Type=simple
 User=__RUN_USER__
 WorkingDirectory=/srv/cc-financial/current
 EnvironmentFile=/srv/cc-financial/shared/health-monitor.env
+Environment=NODE_PATH=/usr/lib/node_modules
 ExecStart=/usr/bin/node /srv/cc-financial/current/deployment/health-monitor.js
 Restart=always
 RestartSec=10

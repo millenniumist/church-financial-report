@@ -1,0 +1,15 @@
+[Unit]
+Description=Docker Image Cleanup Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=mill
+Environment="KEEP_ROLLBACK_IMAGES=5"
+ExecStart=/srv/cc-financial/bin/cleanup-images.sh
+StandardOutput=append:/srv/cc-financial/logs/cleanup.log
+StandardError=append:/srv/cc-financial/logs/cleanup.log
+
+[Install]
+WantedBy=multi-user.target

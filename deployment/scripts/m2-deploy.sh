@@ -35,17 +35,31 @@ cd "$APP_DIR"
 docker buildx build --platform linux/arm64 -t "$IMAGE_NAME:latest" . --load
 
 # 2. Transfer image to Raspberry Pi
-echo "🚚 Transferring image to $REMOTE_HOST..."
-docker save "$IMAGE_NAME:latest" | ssh "$REMOTE_USER@$REMOTE_HOST" "docker load"
+echo "trucking image to $REMOTE_HOST..."
+if command -v sshpass &> /dev/null; then
+    docker save "$IMAGE_NAME:latest" | sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "docker load"
+else
+    docker save "$IMAGE_NAME:latest" | ssh -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "docker load"
+fi
 
 # 3. Trigger remote deployment (optional)
 if [ "${2:-}" != "--no-deploy" ]; then
     echo "🏗️ Triggering remote deployment on $REMOTE_HOST..."
-    ssh "$REMOTE_USER@$REMOTE_HOST" << EOF
-        export SKIP_BUILD=true
-        export ENVIRONMENT=$REMOTE_STACK_NAME
-        /srv/cc-financial/bin/deploy.sh
+    if command -v sshpass &> /dev/null; then
+        sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" << EOF
+            export SKIP_BUILD=true
+            export ENVIRONMENT=$REMOTE_STACK_NAME
+            source /srv/cc-financial/shared/gitops.env
+            /srv/cc-financial/bin/deploy.sh
 EOF
+    else
+        ssh -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" << EOF
+            export SKIP_BUILD=true
+            export ENVIRONMENT=$REMOTE_STACK_NAME
+            source /srv/cc-financial/shared/gitops.env
+            /srv/cc-financial/bin/deploy.sh
+EOF
+    fi
     echo "✅ M2 Build & Deploy completed!"
 else
     echo "✅ Image transferred. Pi GitOps will handle the restart on push."

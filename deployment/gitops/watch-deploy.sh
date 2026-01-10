@@ -1,8 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ENVIRONMENT=""
+INTERVAL="2"
 
-ENVIRONMENT="${1:-}"
+# Parse arguments properly
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    dev|prod)
+      ENVIRONMENT="$1"
+      shift
+      ;;
+    *)
+      if [[ "$1" =~ ^[0-9]+$ ]]; then
+        INTERVAL="$1"
+      else
+        echo "Unknown argument: $1"
+      fi
+      shift
+      ;;
+  esac
+done
 
 if [ -n "$ENVIRONMENT" ]; then
   LOG="${LOG:-/srv/cc-financial/$ENVIRONMENT/logs/deploy.log}"
@@ -13,8 +31,6 @@ else
   BUILD_LOG="${BUILD_LOG:-/srv/cc-financial/logs/build.log}"
   SHA="${SHA:-/srv/cc-financial/current.sha}"
 fi
-
-INTERVAL="${2:-2}"
 
 while true; do
   clear
