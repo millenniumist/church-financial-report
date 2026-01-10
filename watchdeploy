@@ -39,7 +39,9 @@ else
   USE_TUNNEL=true
 fi
 
-REMOTE_CMD="watchdeploy"
+
+TARGET_ENV="${1:-}"
+REMOTE_CMD="watchdeploy $TARGET_ENV"
 
 if [ "$USE_TUNNEL" = "true" ]; then
   if [ -z "${SSH_DOMAIN:-}" ]; then

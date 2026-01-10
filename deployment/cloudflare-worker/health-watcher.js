@@ -12,9 +12,12 @@
  * - Completely independent of Pi (runs on Cloudflare's global network)
  */
 
+const PROD_APP_URL = 'https://www.chonburichurch.com/api/health';
+const DEV_APP_URL = 'https://millenniumist.dpdns.org/api/health';
+
 // Configuration (set via wrangler.toml or Cloudflare dashboard)
 const CONFIG = {
-  APP_URL: 'https://millenniumist.dpdns.org/api/health',
+  APP_URL: PROD_APP_URL,
   DISCORD_BOT_TOKEN: '', // Set as environment variable
   DISCORD_CHANNEL_ID: '', // Set as environment variable
   ALERT_COOLDOWN: 300000, // 5 minutes in milliseconds
@@ -87,6 +90,10 @@ export default {
       // Get configuration from environment variables
       CONFIG.DISCORD_BOT_TOKEN = env.DISCORD_BOT_TOKEN;
       CONFIG.DISCORD_CHANNEL_ID = env.DISCORD_CHANNEL_ID;
+      const envName = (env.ENVIRONMENT || env.NODE_ENV || '').toLowerCase();
+      const defaultAppUrl =
+        envName && envName !== 'production' ? DEV_APP_URL : PROD_APP_URL;
+      CONFIG.APP_URL = env.APP_URL || defaultAppUrl;
 
       if (!CONFIG.DISCORD_BOT_TOKEN || !CONFIG.DISCORD_CHANNEL_ID) {
         console.error('Discord credentials not configured');

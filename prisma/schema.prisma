@@ -178,3 +178,10 @@ model Feedback {
   @@index([status])
   @@index([createdAt])
 }
+
+model AdminSettings {
+  id         String   @id @default(cuid())
+  colorTheme String   @default("bw") // "bw" (black & white) or "lowkey" (low-key colors)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

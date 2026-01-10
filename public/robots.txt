@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://millenniumist.dpdns.org/sitemap.xml
+Sitemap: https://www.chonburichurch.com/sitemap.xml

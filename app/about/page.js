@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { prisma } from '@/lib/prisma';
 
 export const metadata = genMetadata({
   title: 'เกี่ยวกับเรา',
@@ -17,8 +18,12 @@ export const metadata = genMetadata({
   keywords: ['ประวัติคริสตจักร', 'ความเชื่อ', 'ผู้นำคริสตจักร', 'พันธกิจ'],
 });
 
-export default function AboutPage() {
+export default async function AboutPage() {
   const currentYear = new Date().getFullYear();
+  const leaders = await prisma.churchLeader.findMany({
+    orderBy: { order: 'asc' },
+  });
+
   return (
     <main className="bg-white">
       <StickyNav />
@@ -206,31 +211,15 @@ export default function AboutPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell className="text-center font-medium">1</TableCell>
-                  <TableCell>อ.ปฐมพร สิงห์คำป้อง</TableCell>
-                  <TableCell>ศิษยาภิบาล</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-center font-medium">2</TableCell>
-                  <TableCell>อ.จันทรา ตันสกุล</TableCell>
-                  <TableCell>ศาสนาจารย์</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-center font-medium">3</TableCell>
-                  <TableCell>อ.เสารว์ณีย์ อิ่มใจกล้า</TableCell>
-                  <TableCell>อนุศาสนาจารย์</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-center font-medium">4</TableCell>
-                  <TableCell>อาจารย์ เจษฎา ต่อมแก้ว</TableCell>
-                  <TableCell>อาจารย์</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-center font-medium">5</TableCell>
-                  <TableCell>อาจารย์ ชิโร</TableCell>
-                  <TableCell>อาจารย์</TableCell>
-                </TableRow>
+                {leaders.map((leader, index) => (
+                  <TableRow key={leader.id || index}>
+                    <TableCell className="text-center font-medium">
+                      {leader.order || index + 1}
+                    </TableCell>
+                    <TableCell>{leader.name}</TableCell>
+                    <TableCell>{leader.position}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
             <div className="p-6 bg-slate-50/50 border-t">

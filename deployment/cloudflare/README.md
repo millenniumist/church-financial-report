@@ -29,7 +29,7 @@ cp ~/.cloudflared/cert.pem /Users/suparit/Desktop/code/hosting/cloudflare/
 cloudflared tunnel create millenniumist
 ```
 
-This creates a credentials JSON file. Copy it to this directory:
+This creates a credentials JSON file. Copy it to this directory. The tunnel name can stay the same for prod + dev hostnames.
 
 ```bash
 cp ~/.cloudflared/<tunnel-id>.json /Users/suparit/Desktop/code/hosting/cloudflare/
@@ -40,8 +40,14 @@ cp ~/.cloudflared/<tunnel-id>.json /Users/suparit/Desktop/code/hosting/cloudflar
 Point your domain to the tunnel:
 
 ```bash
+cloudflared tunnel route dns millenniumist chonburichurch.com
+cloudflared tunnel route dns millenniumist www.chonburichurch.com
+cloudflared tunnel route dns millenniumist hooks.chonburichurch.com
+cloudflared tunnel route dns millenniumist ssh.chonburichurch.com
 cloudflared tunnel route dns millenniumist millenniumist.dpdns.org
 cloudflared tunnel route dns millenniumist www.millenniumist.dpdns.org
+cloudflared tunnel route dns millenniumist hooks.millenniumist.dpdns.org
+cloudflared tunnel route dns millenniumist ssh.millenniumist.dpdns.org
 ```
 
 ### 4. Create config.yml
@@ -56,7 +62,7 @@ cp config.example.yml config.yml
 Edit `config.yml` and set:
 - `tunnel: YOUR_TUNNEL_ID`
 - `credentials-file: /Users/suparit/Desktop/code/hosting/cloudflare/YOUR_TUNNEL_ID.json`
-- `hostname: your-domain.com`
+- `hostname: chonburichurch.com` (prod) or `millenniumist.dpdns.org` (dev)
 
 ## Existing Setup
 
@@ -109,7 +115,7 @@ tail -f /Users/suparit/Desktop/code/hosting/cloudflared.log
 
 ### Connection issues
 - Verify tunnel is running: `pgrep cloudflared`
-- Check DNS propagation: `nslookup millenniumist.dpdns.org`
+- Check DNS propagation: `nslookup chonburichurch.com` (prod) or `nslookup millenniumist.dpdns.org` (dev)
 - Test local app: `curl http://localhost:8358`
 
 ### Permission errors

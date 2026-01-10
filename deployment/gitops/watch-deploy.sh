@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LOG="${LOG:-/srv/cc-financial/logs/deploy.log}"
-BUILD_LOG="${BUILD_LOG:-/srv/cc-financial/logs/build.log}"
-SHA="${SHA:-/srv/cc-financial/current.sha}"
-INTERVAL="${1:-2}"
+
+ENVIRONMENT="${1:-}"
+
+if [ -n "$ENVIRONMENT" ]; then
+  LOG="${LOG:-/srv/cc-financial/$ENVIRONMENT/logs/deploy.log}"
+  BUILD_LOG="${BUILD_LOG:-/srv/cc-financial/$ENVIRONMENT/logs/build.log}"
+  SHA="${SHA:-/srv/cc-financial/$ENVIRONMENT/current.sha}"
+else
+  LOG="${LOG:-/srv/cc-financial/logs/deploy.log}"
+  BUILD_LOG="${BUILD_LOG:-/srv/cc-financial/logs/build.log}"
+  SHA="${SHA:-/srv/cc-financial/current.sha}"
+fi
+
+INTERVAL="${2:-2}"
 
 while true; do
   clear

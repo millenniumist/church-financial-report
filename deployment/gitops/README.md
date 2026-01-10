@@ -61,7 +61,8 @@ sudo systemctl enable --now cc-financial-webhook
 
 ## GitHub Webhook
 
-- URL: `https://hooks.millenniumist.dpdns.org/webhook`
+- URL (prod): `https://hooks.chonburichurch.com/webhook`
+- URL (dev): `https://hooks.millenniumist.dpdns.org/webhook`
 - Content type: `application/json`
 - Secret: value from `WEBHOOK_SECRET`
 - Events: `push`

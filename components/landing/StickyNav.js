@@ -8,7 +8,7 @@ const DEFAULT_NAV_ITEMS = [
   { id: "home", name: "หน้าแรก", href: "/" },
   { id: "about", name: "เกี่ยวกับเรา", href: "/about" },
   { id: "worship", name: "การนมัสการ", href: "/worship" },
-  { id: "missions", name: "พันธกิจ", href: "/missions" },
+  { id: "missions", name: "คิดต่อเรา", href: "/missions" },
   { id: "projects", name: "โครงการ", href: "/projects" },
   { id: "financial", name: "การเงิน", href: "/financial" },
   { id: "contact", name: "ติดต่อเรา", href: "/contact" },
@@ -121,14 +121,14 @@ export default function StickyNav() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -100, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed top-0 left-0 right-0 z-50 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800"
+          className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50"
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-12">
               {/* Logo */}
               <Link
                 href="/"
-                className="text-white text-sm uppercase tracking-wide font-semibold hover:text-neutral-300 transition-colors"
+                className="text-foreground text-sm uppercase tracking-wide font-semibold hover:opacity-70 transition-opacity"
               >
                 คริสตจักรชลบุรี
               </Link>
@@ -136,7 +136,7 @@ export default function StickyNav() {
               <button
                 type="button"
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="md:hidden inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/90 transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                className="md:hidden inline-flex items-center gap-2 rounded-full border border-border/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/90 transition hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 aria-expanded={menuOpen}
                 aria-controls="sticky-mobile-nav"
               >
@@ -166,7 +166,7 @@ export default function StickyNav() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="text-white hover:text-neutral-300 transition-colors text-sm uppercase"
+                    className="text-foreground hover:text-primary transition-colors text-sm uppercase"
                   >
                     {item.name}
                   </Link>
@@ -179,13 +179,13 @@ export default function StickyNav() {
                 menuOpen ? 'max-h-96 opacity-100 pb-3' : 'max-h-0 opacity-0'
               }`}
             >
-              <div className="mt-2 grid gap-2 rounded-xl border border-white/15 bg-white/5 p-3">
+              <div className="mt-2 grid gap-2 rounded-xl border border-border/20 bg-muted/50 p-3">
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
-                    className="rounded-lg px-3 py-2 text-sm font-semibold uppercase tracking-wide text-white/90 transition hover:bg-white/10"
+                    className="rounded-lg px-3 py-2 text-sm font-semibold uppercase tracking-wide text-foreground/90 transition hover:bg-muted"
                   >
                     {item.name}
                   </Link>

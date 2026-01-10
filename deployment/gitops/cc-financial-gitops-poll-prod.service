@@ -1,0 +1,12 @@
+[Unit]
+Description=CC Financial GitOps Poller (Prod)
+After=network.target
+
+[Service]
+Type=oneshot
+User=__RUN_USER__
+EnvironmentFile=/srv/cc-financial/shared/gitops.env
+Environment=ENVIRONMENT=prod
+Environment=BRANCH=main
+Environment=STACKS_FILE=/srv/cc-financial/shared/stacks.prod.conf
+ExecStart=/srv/cc-financial/bin/poll.sh

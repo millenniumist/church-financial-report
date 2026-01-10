@@ -10,7 +10,15 @@ log() {
   printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" | tee -a "$LOG_DIR/poll.log"
 }
 
-current_sha="$(cat "$DEPLOY_DIR/current.sha" 2>/dev/null || true)"
+
+ENVIRONMENT="${ENVIRONMENT:-}"
+if [ -n "$ENVIRONMENT" ]; then
+  SHA_FILE="${SHA_FILE:-$DEPLOY_DIR/$ENVIRONMENT/current.sha}"
+else
+  SHA_FILE="${SHA_FILE:-$DEPLOY_DIR/current.sha}"
+fi
+
+current_sha="$(cat "$SHA_FILE" 2>/dev/null || true)"
 remote_sha="$(git ls-remote "$REPO_URL" "refs/heads/$BRANCH" | awk '{print $1}')"
 
 if [ -z "$remote_sha" ]; then
@@ -26,4 +34,5 @@ if [ "$remote_short" = "$current_sha" ]; then
 fi
 
 log "new commit detected: $remote_short (current: $current_sha)"
+export SKIP_BUILD=true
 "$DEPLOY_DIR/bin/deploy.sh"

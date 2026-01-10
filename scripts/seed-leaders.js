@@ -6,7 +6,7 @@ const leaders = [
   { name: 'อ.จันทรา ตันสกุล', position: 'ศาสนาจารย์', order: 2 },
   { name: 'อ.เสารว์ณีย์ อิ่มใจกล้า', position: 'อนุศาสนาจารย์', order: 3 },
   { name: 'อาจารย์ เจษฎา ต่อมแก้ว', position: 'อาจารย์', order: 4 },
-  { name: 'อาจารย์ ชิโร', position: 'อาจารย์', order: 5 },
+  { name: 'อาจารย์ พัชราภรณ์ ตระกูลวนาสุข', position: 'อาจารย์', order: 5 },
 ];
 
 async function main() {

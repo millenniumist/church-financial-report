@@ -500,7 +500,7 @@ graph TD
 
     subgraph "External Monitoring (Cloudflare Edge)"
         CF_WORKER[⚡ Cloudflare Worker<br/>Health Watcher] --> EXT_CHK{External Health Check}
-        EXT_CHK -->|Every 60s| EXT_HTTP[HTTP from Internet<br/>millenniumist.dpdns.org]
+        EXT_CHK -->|Every 60s| EXT_HTTP[HTTP from Internet<br/>chonburichurch.com (prod) / millenniumist.dpdns.org (dev)]
         EXT_HTTP --> EXT_DEC{External Status}
         EXT_DEC -->|Unhealthy| EXT_ALERT[Discord Alert<br/>External Monitor]
         EXT_DEC -->|Recovered| EXT_REC[Recovery Alert]

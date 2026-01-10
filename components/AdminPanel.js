@@ -3,17 +3,21 @@
 import { useState, useEffect } from 'react';
 import { getAdminSettings, saveAdminSettings, resetAdminSettings, mergeSettings } from '@/lib/adminSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, RotateCcw } from 'lucide-react';
+import { X, RotateCcw, Palette } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function AdminPanel({ isOpen, onClose }) {
   const [settings, setSettings] = useState({ incomeRows: [], expenseRows: [] });
   const [isLoading, setIsLoading] = useState(false);
+  const { colorTheme, setColorTheme } = useTheme();
+  const [selectedTheme, setSelectedTheme] = useState(colorTheme);
 
   useEffect(() => {
     if (isOpen) {
       loadSettings();
+      setSelectedTheme(colorTheme);
     }
-  }, [isOpen]);
+  }, [isOpen, colorTheme]);
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -53,9 +57,15 @@ export default function AdminPanel({ isOpen, onClose }) {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     saveAdminSettings(settings);
-    alert('บันทึกการตั้งค่าเรียบร้อย\nโปรดรีเฟรชหน้าเพื่อดูการเปลี่ยนแปลง');
+    
+    // Save color theme if changed
+    if (selectedTheme !== colorTheme) {
+      await setColorTheme(selectedTheme);
+    }
+    
+    alert('บันทึกการตั้งค่าเรียบร้อย');
     onClose();
   };
 
@@ -90,6 +100,53 @@ export default function AdminPanel({ isOpen, onClose }) {
             </div>
           ) : (
           <div className="space-y-8">
+            {/* Color Theme Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Palette className="h-5 w-5" />
+                <h3 className="text-lg font-semibold">ธีมสี</h3>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                  <input
+                    type="radio"
+                    name="colorTheme"
+                    value="bw"
+                    checked={selectedTheme === 'bw'}
+                    onChange={(e) => setSelectedTheme(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">ขาวดำ (Black & White)</div>
+                    <div className="text-sm text-muted-foreground">ธีมมินิมอลสีเทาขาวดำ สะอาดตา</div>
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="w-6 h-6 rounded bg-white border-2 border-gray-300"></div>
+                    <div className="w-6 h-6 rounded bg-gray-400"></div>
+                    <div className="w-6 h-6 rounded bg-black"></div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                  <input
+                    type="radio"
+                    name="colorTheme"
+                    value="lowkey"
+                    checked={selectedTheme === 'lowkey'}
+                    onChange={(e) => setSelectedTheme(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">สีอ่อน (Low-Key Colors)</div>
+                    <div className="text-sm text-muted-foreground">ธีมสีอ่อนๆ อบอุ่น เหมาะกับการใช้งานนานๆ</div>
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="w-6 h-6 rounded" style={{backgroundColor: 'oklch(0.40 0.15 250)'}}></div>
+                    <div className="w-6 h-6 rounded" style={{backgroundColor: 'oklch(0.88 0.08 140)'}}></div>
+                    <div className="w-6 h-6 rounded" style={{backgroundColor: 'oklch(0.85 0.12 70)'}}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
             {/* Income Section */}
             <div>
               <h3 className="text-lg font-semibold mb-4">รายรับ</h3>

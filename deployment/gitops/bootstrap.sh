@@ -106,15 +106,30 @@ install_services() {
     sudo systemctl enable --now cc-financial-webhook
   fi
 
+
   if [ "$ENABLE_GITOPS_POLL_TIMER" = "true" ]; then
-    log "installing gitops poll timer"
+    log "installing gitops poll timers (dev & prod)"
+    
+    # Dev
     sed "s|__RUN_USER__|$RUN_USER|g" \
-      "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll.service" | \
-      sudo tee /etc/systemd/system/cc-financial-gitops-poll.service >/dev/null
-    sudo install -m 0644 "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll.timer" \
-      /etc/systemd/system/cc-financial-gitops-poll.timer
+      "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll-dev.service" | \
+      sudo tee /etc/systemd/system/cc-financial-gitops-poll-dev.service >/dev/null
+    sudo install -m 0644 "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll-dev.timer" \
+      /etc/systemd/system/cc-financial-gitops-poll-dev.timer
+    sudo systemctl enable --now cc-financial-gitops-poll-dev.timer
+
+    # Prod
+    sed "s|__RUN_USER__|$RUN_USER|g" \
+      "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll-prod.service" | \
+      sudo tee /etc/systemd/system/cc-financial-gitops-poll-prod.service >/dev/null
+    sudo install -m 0644 "$REPO_ROOT/deployment/gitops/cc-financial-gitops-poll-prod.timer" \
+      /etc/systemd/system/cc-financial-gitops-poll-prod.timer
+    sudo systemctl enable --now cc-financial-gitops-poll-prod.timer
+    
+    # Disable old service if exists
+    sudo systemctl disable --now cc-financial-gitops-poll.timer || true
+    
     sudo systemctl daemon-reload
-    sudo systemctl enable --now cc-financial-gitops-poll.timer
   fi
 
   if [ "$ENABLE_HEALTH_MONITOR_SERVICE" = "true" ]; then

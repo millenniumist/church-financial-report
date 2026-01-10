@@ -16,7 +16,7 @@ const DUMP_FILE = path.join(process.cwd(), 'pi-data-dump.json');
 
 const TABLES = [
   'FinancialRecord', 'FutureProject', 'Mission', 'ContactInfo',
-  'NavigationItem', 'PageContent', 'FinancialCategory', 'CategorySettings', 'Bulletin', 'Feedback'
+  'NavigationItem', 'PageContent', 'FinancialCategory', 'CategorySettings', 'Bulletin', 'Feedback', 'ChurchLeader'
 ];
 
 // === DUMP FROM PI ===
@@ -70,7 +70,8 @@ async function loadToDatabase(databaseUrl, targetName, data) {
       FinancialCategory: 'financialCategory',
       CategorySettings: 'categorySettings',
       Bulletin: 'bulletin',
-      Feedback: 'feedback'
+      Feedback: 'feedback',
+      ChurchLeader: 'churchLeader'
     };
 
     for (const table of TABLES) {
@@ -142,7 +143,8 @@ async function checkStatus() {
     FinancialCategory: 'financialCategory',
     CategorySettings: 'categorySettings',
     Bulletin: 'bulletin',
-    Feedback: 'feedback'
+    Feedback: 'feedback',
+    ChurchLeader: 'churchLeader'
   };
 
   for (const db of cloudDbs) {

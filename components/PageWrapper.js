@@ -12,17 +12,17 @@ export default function PageWrapper({ children }) {
   const handleFooterClick = () => {
     tapCountRef.current += 1;
 
-    // Reset tap count after 2 seconds of inactivity
+    // Reset tap count after 3 seconds of inactivity
     if (tapTimeoutRef.current) {
       clearTimeout(tapTimeoutRef.current);
     }
 
     tapTimeoutRef.current = setTimeout(() => {
       tapCountRef.current = 0;
-    }, 2000);
+    }, 3000);
 
-    // Open admin panel after 10 taps
-    if (tapCountRef.current === 10) {
+    // Open admin panel after 5 taps
+    if (tapCountRef.current === 5) {
       setIsAdminOpen(true);
       tapCountRef.current = 0;
       if (tapTimeoutRef.current) {

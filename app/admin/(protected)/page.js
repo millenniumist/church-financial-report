@@ -58,8 +58,8 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-600 mt-2">Manage your church content</p>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Manage your church content</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -67,13 +67,13 @@ export default async function AdminDashboard() {
           <Link
             key={card.title}
             href={card.link}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border border-slate-200"
+            className="bg-card rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border border-border"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{card.title}</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{card.count}</p>
-                <p className="text-sm text-slate-500 mt-1">{card.description}</p>
+                <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
+                <p className="text-3xl font-bold text-foreground mt-2">{card.count}</p>
+                <p className="text-sm text-muted-foreground/80 mt-1">{card.description}</p>
               </div>
               <div className="text-4xl">{card.icon}</div>
             </div>
@@ -81,32 +81,32 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
+      <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
             href="/admin/missions/new"
-            className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-center font-medium"
+            className="px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition text-center font-medium"
           >
             + New Mission
           </Link>
           <Link
             href="/admin/projects/new"
-            className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-center font-medium"
+            className="px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition text-center font-medium"
           >
             + New Project
           </Link>
           <Link
             href="/admin/config/paths"
-            className="px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-center font-medium"
+            className="px-4 py-3 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition text-center font-medium"
           >
             Manage Path Access
           </Link>
           <Link
-            href="/admin/feedback"
-            className="px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-center font-medium"
+            href="/admin/settings"
+            className="px-4 py-3 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition text-center font-medium"
           >
-            View Feedback
+            General Settings
           </Link>
         </div>
       </div>

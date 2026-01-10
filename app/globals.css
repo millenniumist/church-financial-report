@@ -113,10 +113,46 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+.lowkey {
+  /* Low-key color theme with warm, muted tones - Boosted for better visibility */
+  --background: oklch(0.95 0.03 85);
+  /* Warmer, richer cream background */
+  --foreground: oklch(0.18 0.04 260);
+  /* Deep charcoal navy blue */
+  --card: oklch(0.97 0.02 85);
+  --card-foreground: oklch(0.18 0.04 260);
+  --popover: oklch(0.97 0.02 85);
+  --popover-foreground: oklch(0.18 0.04 260);
+  --primary: oklch(0.40 0.15 250);
+  /* Rich, saturated primary navy */
+  --primary-foreground: oklch(0.98 0.01 85);
+  --secondary: oklch(0.88 0.08 140);
+  /* Vibrant soft sage green */
+  --secondary-foreground: oklch(0.18 0.04 260);
+  --muted: oklch(0.90 0.04 85);
+  --muted-foreground: oklch(0.40 0.06 250);
+  --accent: oklch(0.85 0.12 70);
+  /* Vibrant warm gold/amber */
+  --accent-foreground: oklch(0.18 0.04 260);
+  --destructive: oklch(0.60 0.18 25);
+  --border: oklch(0.82 0.05 85);
+  --input: oklch(0.82 0.05 85);
+  --ring: oklch(0.40 0.15 250);
+  --sidebar: oklch(0.95 0.03 85);
+  --sidebar-foreground: oklch(0.18 0.04 260);
+  --sidebar-primary: oklch(0.40 0.15 250);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.85 0.12 70);
+  --sidebar-accent-foreground: oklch(0.18 0.04 260);
+  --sidebar-border: oklch(0.82 0.05 85);
+  --sidebar-ring: oklch(0.40 0.15 250);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -124,22 +160,40 @@
 
 @layer utilities {
   @keyframes gradient {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.6; }
+
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+
+    50% {
+      opacity: 0.6;
+    }
   }
 
   @keyframes gradient-reverse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
   }
 
   @keyframes blob {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translate(0, 0) scale(1);
     }
+
     33% {
       transform: translate(30px, -50px) scale(1.1);
     }
+
     66% {
       transform: translate(-20px, 20px) scale(0.9);
     }

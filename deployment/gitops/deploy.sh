@@ -1,12 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
 DEPLOY_DIR="${DEPLOY_DIR:-/srv/cc-financial}"
 REPO_URL="${REPO_URL:?REPO_URL is required}"
 BRANCH="${BRANCH:-main}"
-RELEASES_DIR="${RELEASES_DIR:-$DEPLOY_DIR/releases}"
+ENVIRONMENT="${ENVIRONMENT:-}"
+
+
+if [ -n "$ENVIRONMENT" ]; then
+  RELEASES_DIR="${RELEASES_DIR:-$DEPLOY_DIR/$ENVIRONMENT/releases}"
+  CURRENT_LINK="${CURRENT_LINK:-$DEPLOY_DIR/$ENVIRONMENT/current}"
+  SHA_FILE="${SHA_FILE:-$DEPLOY_DIR/$ENVIRONMENT/current.sha}"
+  LOG_DIR="${LOG_DIR:-$DEPLOY_DIR/$ENVIRONMENT/logs}"
+else
+  RELEASES_DIR="${RELEASES_DIR:-$DEPLOY_DIR/releases}"
+  CURRENT_LINK="${CURRENT_LINK:-$DEPLOY_DIR/current}"
+  SHA_FILE="${SHA_FILE:-$DEPLOY_DIR/current.sha}"
+  LOG_DIR="${LOG_DIR:-$DEPLOY_DIR/logs}"
+fi
+
 SHARED_ENV="${SHARED_ENV:-$DEPLOY_DIR/shared/.env}"
-LOG_DIR="${LOG_DIR:-$DEPLOY_DIR/logs}"
 BUILD_LOG="${BUILD_LOG:-$LOG_DIR/build.log}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
 STACKS_FILE="${STACKS_FILE:-$DEPLOY_DIR/shared/stacks.conf}"
@@ -17,6 +31,7 @@ HEALTH_RETRIES="${HEALTH_RETRIES:-10}"
 HEALTH_DELAY_SECONDS="${HEALTH_DELAY_SECONDS:-3}"
 SYNC_SOURCE_DIR="${SYNC_SOURCE_DIR:-$DEPLOY_DIR/shared}"
 SYNC_PATHS="${SYNC_PATHS:-}"
+SKIP_BUILD="${SKIP_BUILD:-false}"
 
 log() {
   printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" | tee -a "$LOG_DIR/deploy.log"
@@ -244,17 +259,21 @@ for i in "${!stacks[@]}"; do
   post_cmd="${stack_post_cmd[$i]}"
 
   if [ -n "$build_image" ]; then
-    if [ -z "$build_context" ]; then
-      build_context="$release_dir"
+    if [ "$SKIP_BUILD" = "true" ]; then
+      log "skipping build for $build_image (SKIP_BUILD set)"
     else
-      build_context="$release_dir/$build_context"
+      if [ -z "$build_context" ]; then
+        build_context="$release_dir"
+      else
+        build_context="$release_dir/$build_context"
+      fi
+      log "building image $build_image:latest (stack $name)"
+      {
+        printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "build start: $build_image ($name)"
+      } >> "$BUILD_LOG"
+      BUILDKIT_PROGRESS=plain docker build -t "$build_image:latest" "$build_context" 2>&1 | tee -a "$BUILD_LOG"
+      printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "build done: $build_image ($name)" >> "$BUILD_LOG"
     fi
-    log "building image $build_image:latest (stack $name)"
-    {
-      printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "build start: $build_image ($name)"
-    } >> "$BUILD_LOG"
-    BUILDKIT_PROGRESS=plain docker build -t "$build_image:latest" "$build_context" 2>&1 | tee -a "$BUILD_LOG"
-    printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "build done: $build_image ($name)" >> "$BUILD_LOG"
   fi
 
   compose_file="$release_dir/$compose_path"
@@ -302,8 +321,10 @@ for i in "${!stacks[@]}"; do
 
 done
 
-ln -sfn "$release_dir" "$DEPLOY_DIR/current"
-echo "$sha" > "$DEPLOY_DIR/current.sha"
+
+mkdir -p "$(dirname "$CURRENT_LINK")"
+ln -sfn "$release_dir" "$CURRENT_LINK"
+echo "$sha" > "$SHA_FILE"
 log "deploy ok: $sha"
 
 log "pruning old releases"

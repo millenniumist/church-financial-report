@@ -10,6 +10,8 @@ PRISMA_PORT="${PRISMA_PORT:-5555}"
 LOCAL_PORT="${LOCAL_PORT:-$PRISMA_PORT}"
 CONTAINER_NAME_DEFAULT="nextjs-app"
 FORWARDER_NAME="prisma-studio-forwarder"
+DEFAULT_SSH_DOMAIN_PROD="ssh.chonburichurch.com"
+DEFAULT_SSH_DOMAIN_DEV="ssh.millenniumist.dpdns.org"
 
 usage() {
   cat <<USAGE
@@ -75,7 +77,14 @@ fi
 : "${password:?password missing in deployment/.env}"
 
 CONTAINER_NAME="${CONTAINER_NAME:-$CONTAINER_NAME_DEFAULT}"
-SSH_DOMAIN="${SSH_DOMAIN:-ssh.millenniumist.dpdns.org}"
+APP_ENV_RAW="${APP_ENV:-${ENVIRONMENT:-${NODE_ENV:-}}}"
+APP_ENV_LOWER="$(printf '%s' "$APP_ENV_RAW" | tr '[:upper:]' '[:lower:]')"
+if [ -n "$APP_ENV_LOWER" ] && [ "$APP_ENV_LOWER" != "production" ]; then
+  DEFAULT_SSH_DOMAIN="$DEFAULT_SSH_DOMAIN_DEV"
+else
+  DEFAULT_SSH_DOMAIN="$DEFAULT_SSH_DOMAIN_PROD"
+fi
+SSH_DOMAIN="${SSH_DOMAIN:-$DEFAULT_SSH_DOMAIN}"
 
 ensure_command() {
   if ! command -v "$1" >/dev/null 2>&1; then

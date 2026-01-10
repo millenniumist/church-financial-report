@@ -1,6 +1,7 @@
 import { Sarabun } from "next/font/google";
 import "./globals.css";
 import { generateMetadata as genMetadata } from "@/lib/seo";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const sarabun = Sarabun({
   weight: ['300', '400', '500', '600', '700'],
@@ -12,10 +13,13 @@ export const metadata = genMetadata({});
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="th">
+    <html lang="th" suppressHydrationWarning>
       <body className={`${sarabun.variable} antialiased font-sans`}>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+
