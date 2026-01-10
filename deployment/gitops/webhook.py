@@ -97,7 +97,7 @@ class Handler(BaseHTTPRequestHandler):
 
         log(f"deploy triggered: event=push delivery={delivery} ref={ref}")
         env = os.environ.copy()
-        env["SKIP_BUILD"] = "true"
+
         subprocess.Popen([DEPLOY_SCRIPT], env=env, start_new_session=True)
         self._send(202, {"status": "deploy_started"})
 

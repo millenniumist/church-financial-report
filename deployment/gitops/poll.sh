@@ -34,5 +34,5 @@ if [ "$remote_short" = "$current_sha" ]; then
 fi
 
 log "new commit detected: $remote_short (current: $current_sha)"
-export SKIP_BUILD=true
+
 "$DEPLOY_DIR/bin/deploy.sh"
