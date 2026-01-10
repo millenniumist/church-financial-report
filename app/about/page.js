@@ -18,11 +18,20 @@ export const metadata = genMetadata({
   keywords: ['ประวัติคริสตจักร', 'ความเชื่อ', 'ผู้นำคริสตจักร', 'พันธกิจ'],
 });
 
+export const dynamic = 'force-dynamic';
+
 export default async function AboutPage() {
   const currentYear = new Date().getFullYear();
-  const leaders = await prisma.churchLeader.findMany({
-    orderBy: { order: 'asc' },
-  });
+  let leaders = [];
+  
+  try {
+    leaders = await prisma.churchLeader.findMany({
+      orderBy: { order: 'asc' },
+    });
+  } catch (error) {
+    console.warn('Database access skipped or failed:', error.message);
+    // Fallback to empty leaders list
+  }
 
   return (
     <main className="bg-white">
