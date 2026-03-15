@@ -20,8 +20,8 @@ const DEFAULT_CONTENT = {
   description:
     "ร่วมเดินไปกับเราในการประกาศพระกิตติคุณ สร้างสาวก และดูแลชุมชนด้วยความรักของพระคริสต์",
   cta: {
-    label: "คิดต่อเรา",
-    href: "/missions",
+    label: "ติดต่อเรา",
+    href: "/contact",
   },
 };
 
